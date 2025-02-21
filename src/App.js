@@ -1,25 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import ProjectForm from './components/ProjectForm';
+import Portfolio from './components/Portfolio';
+import styled from 'styled-components';
+
+const AppContainer = styled.div`
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20px;
+`;
+
+const Header = styled.h1`
+  text-align: center;
+  color: #333;
+  margin-bottom: 2rem;
+`;
 
 function App() {
+  const [projects, setProjects] = useState([]);
+
+  const handleProjectSubmit = (project) => {
+    setProjects([...projects, project]);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AppContainer>
+      <Header>Portfolio Generator</Header>
+      <ProjectForm onSubmit={handleProjectSubmit} />
+      <Portfolio projects={projects} />
+    </AppContainer>
   );
 }
 
-export default App;
+export default App; 
