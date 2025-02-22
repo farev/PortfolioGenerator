@@ -11,6 +11,8 @@ from services.linkedin_parser import LinkedInParser
 from templates.portfolio_template import generate_portfolio
 from services.resume_parser import ResumeParser
 import io
+from services.project_generator import ProjectGenerator
+from services.project_description_generator import ProjectDescriptionGenerator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +44,12 @@ except Exception as e:
 
 resume_parser = ResumeParser()
 
+# Initialize project generator with OpenAI client
+project_generator = ProjectGenerator(client)
+
+# Initialize the description generator
+description_generator = ProjectDescriptionGenerator(client)
+
 # Data validation models
 class Project(BaseModel):
     title: str
@@ -57,6 +65,7 @@ class UserInfo(BaseModel):
     github: str
     linkedin: str
     about_me: str | None = None
+    projects: List[dict] | None = None
 
 class PortfolioRequest(BaseModel):
     user: UserInfo
@@ -68,7 +77,8 @@ class LinkedInRequest(BaseModel):
 @app.post("/generate-portfolio")
 async def generate_portfolio_handler(request: UserInfo):
     try:
-        html = generate_portfolio(request.dict())
+        user_data = request.dict()
+        html = generate_portfolio(user_data)
         return {"html": html}
     except Exception as e:
         logger.error(f"Portfolio generation error: {str(e)}")
@@ -102,6 +112,21 @@ async def parse_resume(file: UploadFile = File(...)):
         return data
     except Exception as e:
         logger.error(f"Resume parsing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-project-description")
+async def generate_project_description(data: dict):
+    try:
+        if 'youtube_url' not in data:
+            raise HTTPException(status_code=400, detail="YouTube URL is required")
+
+        description = description_generator.generate_description(data['youtube_url'])
+        if not description:
+            raise HTTPException(status_code=400, detail="Could not generate description")
+
+        return {"description": description}
+    except Exception as e:
+        logger.error(f"Error generating project description: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

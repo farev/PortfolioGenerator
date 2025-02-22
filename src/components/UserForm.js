@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import ProjectForm from './ProjectForm';
 
 const Form = styled.form`
   max-width: 800px;
@@ -144,35 +145,55 @@ const FileUploadButton = styled.label`
   }
 `;
 
-const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
-  const [userInfo, setUserInfo] = useState({
+const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) => {
+  const [formData, setFormData] = useState(initialData || {
     name: '',
-    skills: '',
-    interests: '',
     email: '',
     github: '',
     linkedin: '',
-    about_me: ''
+    about_me: '',
+    interests: '',
+    skills: ''
   });
-
   const [isImporting, setIsImporting] = useState(false);
   const [isParsingResume, setIsParsingResume] = useState(false);
+  const [isPortfolioGenerated, setIsPortfolioGenerated] = useState(false);
+  const [projects, setProjects] = useState(initialData?.projects || []);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+      setProjects(initialData.projects || []);
+      setIsPortfolioGenerated(true);
+    }
+  }, [initialData]);
+
+  const handleProjectsUpdate = (updateFn) => {
+    const updatedProjects = updateFn(projects);
+    setProjects(updatedProjects);
+    onProjectsUpdate(updatedProjects);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(userInfo);
+    try {
+      await onGenerate({ ...formData, projects });
+      setIsPortfolioGenerated(true);
+    } catch (error) {
+      console.error('Error generating portfolio:', error);
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUserInfo(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
   const importFromLinkedIn = async () => {
-    if (!userInfo.linkedin) {
+    if (!formData.linkedin) {
       alert('Please enter your LinkedIn profile URL');
       return;
     }
@@ -185,7 +206,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          profile_url: userInfo.linkedin 
+          profile_url: formData.linkedin 
         }),
       });
 
@@ -197,7 +218,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
       const data = await response.json();
       console.log('LinkedIn data:', data); // Debug log
 
-      setUserInfo(prev => ({
+      setFormData(prev => ({
         ...prev,
         name: data.name || prev.name,
         skills: data.skills || prev.skills,
@@ -233,7 +254,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
       }
 
       const data = await response.json();
-      setUserInfo(prev => ({
+      setFormData(prev => ({
         ...prev,
         ...data
       }));
@@ -268,14 +289,14 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
             <Input
               type="url"
               name="linkedin"
-              value={userInfo.linkedin}
+              value={formData.linkedin}
               onChange={handleChange}
               placeholder="https://www.linkedin.com/in/your-profile"
             />
             <ImportButton 
               type="button"
               onClick={importFromLinkedIn}
-              disabled={isImporting || !userInfo.linkedin}
+              disabled={isImporting || !formData.linkedin}
             >
               {isImporting ? 'Importing...' : 'Import Data'}
             </ImportButton>
@@ -288,7 +309,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
         <Input
           type="text"
           name="name"
-          value={userInfo.name}
+          value={formData.name}
           onChange={handleChange}
           required
         />
@@ -298,7 +319,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
         <Label>Skills</Label>
         <TextArea
           name="skills"
-          value={userInfo.skills}
+          value={formData.skills}
           onChange={handleChange}
           placeholder="e.g., JavaScript, React, Node.js"
           required
@@ -310,7 +331,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
         <Input
           type="text"
           name="interests"
-          value={userInfo.interests}
+          value={formData.interests}
           onChange={handleChange}
           placeholder="e.g., Web Development, AI, Open Source"
           required
@@ -322,7 +343,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
         <Input
           type="email"
           name="email"
-          value={userInfo.email}
+          value={formData.email}
           onChange={handleChange}
           required
         />
@@ -333,7 +354,7 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
         <Input
           type="url"
           name="github"
-          value={userInfo.github}
+          value={formData.github}
           onChange={handleChange}
           required
         />
@@ -343,22 +364,24 @@ const UserForm = ({ onSubmit, onGenerate, isGenerating }) => {
         <Label>About Me</Label>
         <TextArea
           name="about_me"
-          value={userInfo.about_me}
+          value={formData.about_me}
           onChange={handleChange}
           placeholder="Tell us about yourself..."
         />
       </FormGroup>
 
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-        <Button type="submit">Save Information</Button>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
         <GenerateButton 
-          type="button"
-          onClick={onGenerate}
+          type="submit"
           disabled={isGenerating}
         >
           {isGenerating ? 'Generating...' : 'Generate Portfolio'}
         </GenerateButton>
       </div>
+
+      {isPortfolioGenerated && (
+        <ProjectForm onProjectsUpdate={handleProjectsUpdate} />
+      )}
     </Form>
   );
 };

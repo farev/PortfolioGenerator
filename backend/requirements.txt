@@ -1,7 +1,7 @@
 annotated-types==0.7.0
 anyio==4.8.0
 attrs==25.1.0
-beautifulsoup4==4.13.3
+beautifulsoup4==4.12.3
 certifi==2025.1.31
 charset-normalizer==3.4.1
 click==8.1.8
@@ -32,7 +32,7 @@ PySocks==1.7.1
 python-dotenv==1.0.1
 python-multipart==0.0.20
 PyYAML==6.0.2
-requests==2.32.3
+requests==2.31.0
 rich==13.9.4
 rich-toolkit==0.13.2
 selenium==4.29.0

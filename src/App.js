@@ -44,14 +44,14 @@ const TabBar = styled.div`
 `;
 
 const Tab = styled.button`
-  background-color: ${props => props.active ? '#1e1e1e' : 'transparent'};
-  color: ${props => props.active ? '#fff' : '#999'};
+  background-color: ${props => props.$active ? '#1e1e1e' : 'transparent'};
+  color: ${props => props.$active ? '#fff' : '#999'};
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;
   &:hover {
-    background-color: ${props => props.active ? '#1e1e1e' : '#333'};
+    background-color: ${props => props.$active ? '#1e1e1e' : '#333'};
   }
 `;
 
@@ -79,12 +79,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('preview');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleGenerate = async () => {
-    if (!userInfo) {
-      alert('Please fill in your information first');
-      return;
-    }
-
+  const handleGenerate = async (formData) => {
     setIsGenerating(true);
     try {
       const response = await fetch('http://localhost:8000/generate-portfolio', {
@@ -92,7 +87,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userInfo),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -101,11 +96,43 @@ function App() {
 
       const data = await response.json();
       setGeneratedHtml(data.html);
+      setUserInfo(formData);
+      setActiveTab('preview');
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to generate portfolio');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleProjectsUpdate = async (projects) => {
+    if (!userInfo) return;
+
+    try {
+      const updatedUserInfo = {
+        ...userInfo,
+        projects
+      };
+
+      const response = await fetch('http://localhost:8000/generate-portfolio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedUserInfo),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update portfolio');
+      }
+
+      const data = await response.json();
+      setGeneratedHtml(data.html);
+      setUserInfo(updatedUserInfo);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to update portfolio with new project');
     }
   };
 
@@ -123,21 +150,22 @@ function App() {
       <MainContent>
         <Sidebar>
           <UserForm 
-            onSubmit={setUserInfo} 
             onGenerate={handleGenerate}
+            onProjectsUpdate={handleProjectsUpdate}
             isGenerating={isGenerating}
+            initialData={userInfo}
           />
         </Sidebar>
         <EditorSection>
           <TabBar>
             <Tab 
-              active={activeTab === 'preview'} 
+              $active={activeTab === 'preview'}
               onClick={() => setActiveTab('preview')}
             >
               Preview
             </Tab>
             <Tab 
-              active={activeTab === 'code'} 
+              $active={activeTab === 'code'}
               onClick={() => setActiveTab('code')}
             >
               Code

@@ -4,7 +4,8 @@ PORTFOLIO_TEMPLATE = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Portfolio</title>
+    <title>{name} - Portfolio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {{
             margin: 0;
@@ -222,7 +223,6 @@ PORTFOLIO_TEMPLATE = '''
             }}
         }}
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 </head>
 <body>
     <header>
@@ -238,9 +238,7 @@ PORTFOLIO_TEMPLATE = '''
 
     <section class="hero">
         <div class="container">
-            <h1>Welcome to My Portfolio</h1>
-            <p>I'm a developer passionate about creating amazing digital experiences</p>
-            <a href="#projects" class="cta-button">View My Work</a>
+            <h1>{name}</h1>
         </div>
     </section>
 
@@ -248,7 +246,6 @@ PORTFOLIO_TEMPLATE = '''
         <div class="container">
             <h2 class="section-title">About Me</h2>
             <div class="about-content">
-                <img src="https://via.placeholder.com/300" alt="Profile" class="about-image">
                 <div class="about-text">
                     <p>{about_me}</p>
                     <p>My interests include {interests}</p>
@@ -257,11 +254,20 @@ PORTFOLIO_TEMPLATE = '''
         </div>
     </section>
 
+    <section id="skills" class="skills">
+        <div class="container">
+            <h2 class="section-title">Skills</h2>
+            <div class="skills-grid">
+                {skills_html}
+            </div>
+        </div>
+    </section>
+
     <section id="projects" class="projects">
         <div class="container">
-            <h2 class="section-title">My Skills</h2>
+            <h2 class="section-title">Projects</h2>
             <div class="projects-grid">
-                {skills_html}
+                {projects_html}
             </div>
         </div>
     </section>
@@ -269,7 +275,7 @@ PORTFOLIO_TEMPLATE = '''
     <section id="contact" class="contact">
         <div class="container">
             <h2 class="section-title">Get in Touch</h2>
-            <p>I'm always open to new opportunities and collaborations. Feel free to reach out!</p>
+            <p>I'm always open to new opportunities and collaborations.</p>
             <div class="social-links">
                 <a href="mailto:{email}"><i class="fas fa-envelope"></i></a>
                 <a href="{github}"><i class="fab fa-github"></i></a>
@@ -280,7 +286,7 @@ PORTFOLIO_TEMPLATE = '''
 
     <footer>
         <div class="container">
-            <p>&copy; <script>document.write(new Date().getFullYear())</script> {name}. All rights reserved.</p>
+            <p>&copy; {name} 2024. All rights reserved.</p>
         </div>
     </footer>
 </body>
@@ -292,12 +298,33 @@ def generate_portfolio(user_info):
     skills_list = [skill.strip() for skill in user_info['skills'].split(',')]
     skills_html = '\n'.join([
         f'''
-        <div class="project-card">
-            <div class="project-info">
+        <div class="skill-card">
+            <div class="skill-info">
                 <h3>{skill}</h3>
             </div>
         </div>
         ''' for skill in skills_list
+    ])
+
+    # Generate projects HTML
+    projects_html = '\n'.join([
+        f'''
+        <div class="project-card">
+            <div class="project-image-container">
+                <img src="{project['image']}" alt="{project['title']}" class="project-image">
+            </div>
+            <div class="project-info">
+                <h3>{project['title']}</h3>
+                <p class="project-description">{project['description']}</p>
+                {f'<div class="project-tech">{project["technologies"]}</div>' if project.get("technologies") else ''}
+                <div class="project-links">
+                    {f'<a href="{project["github"]}" class="project-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>' if project.get('github') else ''}
+                    {f'<a href="{project["demo"]}" class="project-link" target="_blank"><i class="fab fa-youtube"></i> Demo</a>' if project.get('demo') else ''}
+                    {f'<a href="{project["live"]}" class="project-link" target="_blank"><i class="fas fa-external-link-alt"></i> Live</a>' if project.get('live') else ''}
+                </div>
+            </div>
+        </div>
+        ''' for project in user_info.get('projects', [])
     ])
 
     # Replace template variables
@@ -305,6 +332,7 @@ def generate_portfolio(user_info):
         name=user_info['name'],
         about_me=user_info['about_me'],
         skills_html=skills_html,
+        projects_html=projects_html,
         interests=user_info['interests'],
         email=user_info['email'],
         github=user_info['github'],
