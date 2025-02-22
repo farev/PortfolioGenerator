@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import ProjectForm from './ProjectForm';
 
 const Form = styled.form`
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  background: white;
+  background: #252526;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: #d4d4d4;
 `;
 
 const FormGroup = styled.div`
@@ -17,22 +18,43 @@ const FormGroup = styled.div`
 const Label = styled.label`
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: bold;
+  color: #cccccc;
+  font-size: 0.9rem;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
+  padding: 0.75rem;
+  background-color: #3c3c3c;
+  border: 1px solid #404040;
   border-radius: 4px;
+  color: #ffffff;
+  font-size: 0.9rem;
+
+  &:focus {
+    outline: none;
+    border-color: #007acc;
+  }
+
+  &::placeholder {
+    color: #808080;
+  }
 `;
 
 const TextArea = styled.textarea`
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
+  padding: 0.75rem;
+  background-color: #3c3c3c;
+  border: 1px solid #404040;
   border-radius: 4px;
+  color: #ffffff;
   min-height: 100px;
+  font-size: 0.9rem;
+
+  &:focus {
+    outline: none;
+    border-color: #007acc;
+  }
 `;
 
 const Button = styled.button`
@@ -51,60 +73,127 @@ const Button = styled.button`
 const LinkedInSection = styled.div`
   margin-bottom: 2rem;
   padding: 1rem;
-  border: 1px solid #ddd;
+  background-color: #2d2d2d;
+  border: 1px solid #404040;
   border-radius: 4px;
 `;
 
 const ImportButton = styled.button`
   background-color: #0077b5;
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   margin-left: 1rem;
+  font-size: 0.9rem;
 
   &:hover {
     background-color: #006097;
   }
 
   &:disabled {
-    background-color: #ccc;
+    background-color: #2d2d2d;
     cursor: not-allowed;
   }
 `;
 
-const UserForm = ({ onSubmit }) => {
-  const [userInfo, setUserInfo] = useState({
+const GenerateButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 1rem;
+
+  &:hover {
+    background-color: #45a049;
+  }
+
+  &:disabled {
+    background-color: #2d2d2d;
+    cursor: not-allowed;
+  }
+`;
+
+const SectionTitle = styled.h2`
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin: 0 0 1.5rem;
+  font-weight: normal;
+`;
+
+const FileUploadButton = styled.label`
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #2ea043;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  text-align: center;
+  margin-bottom: 1rem;
+
+  &:hover {
+    background-color: #2c974b;
+  }
+
+  input {
+    display: none;
+  }
+`;
+
+const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) => {
+  const [formData, setFormData] = useState(initialData || {
     name: '',
-    profession: '',
-    years_experience: '',
-    skills: '',
-    interests: '',
-    hobbies: '',
     email: '',
     github: '',
     linkedin: '',
-    about_me: ''
+    about_me: '',
+    interests: '',
+    skills: ''
   });
-
   const [isImporting, setIsImporting] = useState(false);
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [isPortfolioGenerated, setIsPortfolioGenerated] = useState(false);
+  const [projects, setProjects] = useState(initialData?.projects || []);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+      setProjects(initialData.projects || []);
+      setIsPortfolioGenerated(true);
+    }
+  }, [initialData]);
+
+  const handleProjectsUpdate = (updateFn) => {
+    const updatedProjects = updateFn(projects);
+    setProjects(updatedProjects);
+    onProjectsUpdate(updatedProjects);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(userInfo);
+    try {
+      await onGenerate({ ...formData, projects });
+      setIsPortfolioGenerated(true);
+    } catch (error) {
+      console.error('Error generating portfolio:', error);
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUserInfo(prev => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
   const importFromLinkedIn = async () => {
-    if (!userInfo.linkedin) {
+    if (!formData.linkedin) {
       alert('Please enter your LinkedIn profile URL');
       return;
     }
@@ -117,7 +206,7 @@ const UserForm = ({ onSubmit }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          profile_url: userInfo.linkedin 
+          profile_url: formData.linkedin 
         }),
       });
 
@@ -129,11 +218,9 @@ const UserForm = ({ onSubmit }) => {
       const data = await response.json();
       console.log('LinkedIn data:', data); // Debug log
 
-      setUserInfo(prev => ({
+      setFormData(prev => ({
         ...prev,
         name: data.name || prev.name,
-        profession: data.profession || prev.profession,
-        years_experience: data.years_experience || prev.years_experience,
         skills: data.skills || prev.skills,
         about_me: data.about_me || prev.about_me,
       }));
@@ -148,10 +235,53 @@ const UserForm = ({ onSubmit }) => {
     }
   };
 
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsParsingResume(true);
+    try {
+      const response = await fetch('http://localhost:8000/parse-resume', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to parse resume');
+      }
+
+      const data = await response.json();
+      setFormData(prev => ({
+        ...prev,
+        ...data
+      }));
+
+      alert('Resume parsed successfully!');
+    } catch (error) {
+      console.error('Error parsing resume:', error);
+      alert('Failed to parse resume. Please fill in the information manually.');
+    } finally {
+      setIsParsingResume(false);
+    }
+  };
+
   return (
     <Form onSubmit={handleSubmit}>
-      <h2>Personal Information</h2>
+      <SectionTitle>Personal Information</SectionTitle>
       
+      <FileUploadButton>
+        {isParsingResume ? 'Parsing Resume...' : 'Upload Resume'}
+        <input
+          type="file"
+          accept=".pdf,.docx"
+          onChange={handleResumeUpload}
+          disabled={isParsingResume}
+        />
+      </FileUploadButton>
+
       <LinkedInSection>
         <FormGroup>
           <Label>LinkedIn Profile URL</Label>
@@ -159,14 +289,14 @@ const UserForm = ({ onSubmit }) => {
             <Input
               type="url"
               name="linkedin"
-              value={userInfo.linkedin}
+              value={formData.linkedin}
               onChange={handleChange}
               placeholder="https://www.linkedin.com/in/your-profile"
             />
             <ImportButton 
               type="button"
               onClick={importFromLinkedIn}
-              disabled={isImporting || !userInfo.linkedin}
+              disabled={isImporting || !formData.linkedin}
             >
               {isImporting ? 'Importing...' : 'Import Data'}
             </ImportButton>
@@ -179,29 +309,7 @@ const UserForm = ({ onSubmit }) => {
         <Input
           type="text"
           name="name"
-          value={userInfo.name}
-          onChange={handleChange}
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Profession</Label>
-        <Input
-          type="text"
-          name="profession"
-          value={userInfo.profession}
-          onChange={handleChange}
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Years of Experience</Label>
-        <Input
-          type="number"
-          name="years_experience"
-          value={userInfo.years_experience}
+          value={formData.name}
           onChange={handleChange}
           required
         />
@@ -211,8 +319,9 @@ const UserForm = ({ onSubmit }) => {
         <Label>Skills</Label>
         <TextArea
           name="skills"
-          value={userInfo.skills}
+          value={formData.skills}
           onChange={handleChange}
+          placeholder="e.g., JavaScript, React, Node.js"
           required
         />
       </FormGroup>
@@ -222,19 +331,9 @@ const UserForm = ({ onSubmit }) => {
         <Input
           type="text"
           name="interests"
-          value={userInfo.interests}
+          value={formData.interests}
           onChange={handleChange}
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Hobbies</Label>
-        <Input
-          type="text"
-          name="hobbies"
-          value={userInfo.hobbies}
-          onChange={handleChange}
+          placeholder="e.g., Web Development, AI, Open Source"
           required
         />
       </FormGroup>
@@ -244,7 +343,7 @@ const UserForm = ({ onSubmit }) => {
         <Input
           type="email"
           name="email"
-          value={userInfo.email}
+          value={formData.email}
           onChange={handleChange}
           required
         />
@@ -255,7 +354,7 @@ const UserForm = ({ onSubmit }) => {
         <Input
           type="url"
           name="github"
-          value={userInfo.github}
+          value={formData.github}
           onChange={handleChange}
           required
         />
@@ -265,12 +364,24 @@ const UserForm = ({ onSubmit }) => {
         <Label>About Me</Label>
         <TextArea
           name="about_me"
-          value={userInfo.about_me}
+          value={formData.about_me}
           onChange={handleChange}
+          placeholder="Tell us about yourself..."
         />
       </FormGroup>
 
-      <Button type="submit">Save Information</Button>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+        <GenerateButton 
+          type="submit"
+          disabled={isGenerating}
+        >
+          {isGenerating ? 'Generating...' : 'Generate Portfolio'}
+        </GenerateButton>
+      </div>
+
+      {isPortfolioGenerated && (
+        <ProjectForm onProjectsUpdate={handleProjectsUpdate} />
+      )}
     </Form>
   );
 };

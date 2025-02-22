@@ -2,11 +2,8 @@ import React from 'react';
 import styled from 'styled-components';
 
 const PreviewContainer = styled.div`
-  height: calc(100vh - 200px);
-  border: 1px solid #ddd;
-  border-radius: 0 0 8px 8px;
-  overflow: hidden;
-  background: white;
+  height: 100%;
+  background: #1e1e1e;
 `;
 
 const PreviewFrame = styled.iframe`
@@ -16,13 +13,38 @@ const PreviewFrame = styled.iframe`
 `;
 
 const Preview = ({ html }) => {
-  // Add default content when no HTML is generated yet
   const defaultContent = `
     <html>
-      <body style="display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; color: #666;">
-        <div style="text-align: center;">
-          <h2>Portfolio Preview</h2>
-          <p>Generate your portfolio to see the preview here</p>
+      <head>
+        <style>
+          body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+          }
+          .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+          }
+          h2 {
+            color: #d4d4d4;
+            margin-bottom: 1rem;
+          }
+          p {
+            color: #808080;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div>
+            <h2>Portfolio Preview</h2>
+            <p>Fill in your information and generate to see the preview</p>
+          </div>
         </div>
       </body>
     </html>

@@ -3,10 +3,7 @@ import styled from 'styled-components';
 import Editor from '@monaco-editor/react';
 
 const CodeViewContainer = styled.div`
-  height: calc(100vh - 200px);
-  border: 1px solid #ddd;
-  border-radius: 0 0 8px 8px;
-  overflow: hidden;
+  height: 100%;
 `;
 
 const defaultContent = `<!-- Your generated portfolio HTML will appear here -->
@@ -37,7 +34,7 @@ const CodeView = ({ code, onChange }) => {
         defaultLanguage="html"
         value={code || defaultContent}
         onChange={handleEditorChange}
-        theme="vs-light"
+        theme="vs-dark"
         options={{
           minimap: { enabled: false },
           fontSize: 14,
@@ -47,8 +44,6 @@ const CodeView = ({ code, onChange }) => {
           formatOnPaste: true,
           formatOnType: true,
           autoIndent: 'full',
-          lineDecorationsWidth: 0,
-          lineNumbersMinChars: 3,
         }}
       />
     </CodeViewContainer>
