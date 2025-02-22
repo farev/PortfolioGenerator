@@ -1,5 +1,7 @@
 import requests
 import base64
+import pprint
+from urllib.parse import urlparse
 
 def get_public_repos(username):
     url = f"https://api.github.com/users/{username}/repos"
@@ -9,6 +11,17 @@ def get_public_repos(username):
         return response.json()
     else:
         print(f"Error: Unable to fetch repositories (Status Code: {response.status_code})")
+        return None
+
+def get_user(username):
+    url = f"https://api.github.com/users/{username}"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        user_data = response.json()
+        return user_data
+    else:
+        print(f"Error: Unable to fetch user info (Status Code: {response.status_code})")
         return None
 
 def get_readme(username, repo):
@@ -23,28 +36,84 @@ def get_readme(username, repo):
         print(f"No README found for {repo}.")
         return None
 
+def extract_username(url):
+    parsed_url = urlparse(url)
+    path_parts = parsed_url.path.strip('/').split('/')
+    
+    if len(path_parts) >= 1:
+        return path_parts[0]  # First part of the path is the username
+    return None
+
+def get_user_data(username):
+    user = get_user(username)
+    if user is None:
+        return None
+    target_fields = [
+        'bio',
+        'email',
+        'twitter_username',
+        'avatar_url'
+    ]
+    user_data = {}
+    for field in target_fields:
+        if field in user and user[field]:
+            user_data[field] = user[field]
+    if not user_data:
+        return None
+    return user_data
+
+def get_projects_with_description(username):
+    repos = get_public_repos(username)
+    if repo is None:
+        return None
+    projects = []
+    for repo in repos:
+        if 'description' not in repo:
+            continue
+        if repo['description'] is None:
+            continue
+        name = repo['name']
+        description = repo['description']
+        url = repo['url']
+        project = {'name': name, 'description': description, 'url': url}
+        if 'topics' in repo and repo['topics']:
+            project['topics'] = repo['topics']
+        if 'homepage' in repo and repo['homepage']:
+            project['homepage'] = repo['homepage']
+        projects.append(project)
+    return projects
+            
+
 if __name__ == '__main__':
     username = input("Enter GitHub username: ")
-    repos = get_public_repos(username)
+    username = extract_username(username)
+    pprint.pp(get_user_data(username))
+
+    # projects = get_projects_with_description(username)
+    # for project in projects:
+    #     pprint.pp(project)
+
+
+    # repos = get_public_repos(username)
     
-    if repos:
-        for repo in repos:
-            name = repo['name']
-            description = repo.get('description', 'No description provided')
-            topics = ', '.join(repo.get('topics', [])) or "No topics"
-            created_at = repo['created_at']
-            updated_at = repo['updated_at']
+    # if repos:
+    #     for repo in repos:
+    #         name = repo['name']
+    #         description = repo.get('description', 'No description provided')
+    #         topics = ', '.join(repo.get('topics', [])) or "No topics"
+    #         created_at = repo['created_at']
+    #         updated_at = repo['updated_at']
             
-            print(f"\nRepository: {name}")
-            print(f"Description: {description}")
-            print(f"Topics: {topics}")
-            print(f"Created at: {created_at}")
-            print(f"Last updated: {updated_at}")
+    #         print(f"\nRepository: {name}")
+    #         print(f"Description: {description}")
+    #         print(f"Topics: {topics}")
+    #         print(f"Created at: {created_at}")
+    #         print(f"Last updated: {updated_at}")
             
-            choice = input("Do you want to fetch the README? (yes/no): ").strip().lower()
-            if choice == 'yes':
-                readme = get_readme(username, name)
-                if readme:
-                    print(f"\nREADME for {name}:\n")
-                    print(readme[:500])  # Print only the first 500 characters to keep output short
-                    print("\n" + "="*80 + "\n")
+    #         choice = input("Do you want to fetch the README? (yes/no): ").strip().lower()
+    #         if choice == 'yes':
+    #             readme = get_readme(username, name)
+    #             if readme:
+    #                 print(f"\nREADME for {name}:\n")
+    #                 print(readme[:500])  # Print only the first 500 characters to keep output short
+    #                 print("\n" + "="*80 + "\n")
