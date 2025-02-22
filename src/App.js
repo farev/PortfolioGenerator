@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import ProjectForm from './components/ProjectForm';
 import Portfolio from './components/Portfolio';
 import Preview from './components/Preview';
+import UserForm from './components/UserForm';
+import CodeView from './components/CodeView';
 import styled from 'styled-components';
 
 const AppContainer = styled.div`
@@ -16,9 +18,49 @@ const Header = styled.h1`
   margin-bottom: 2rem;
 `;
 
+const SplitLayout = styled.div`
+  display: grid;
+  grid-template-columns: 45% 55%;
+  gap: 2rem;
+  margin-top: 2rem;
+`;
+
+const LeftPanel = styled.div`
+  padding: 1rem;
+`;
+
+const RightPanel = styled.div`
+  padding: 1rem;
+  position: sticky;
+  top: 20px;
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+`;
+
+const TabContainer = styled.div`
+  display: flex;
+  margin-bottom: 1rem;
+`;
+
+const Tab = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: ${props => props.active ? '#007bff' : '#f8f9fa'};
+  color: ${props => props.active ? 'white' : '#333'};
+  border: 1px solid #dee2e6;
+  border-bottom: none;
+  cursor: pointer;
+  &:first-child {
+    border-radius: 4px 0 0 0;
+  }
+  &:last-child {
+    border-radius: 0 4px 0 0;
+  }
+`;
+
 const GenerateButton = styled.button`
   display: block;
-  margin: 2rem auto;
+  width: 100%;
+  margin: 2rem 0;
   padding: 1rem 2rem;
   background-color: #28a745;
   color: white;
@@ -34,14 +76,25 @@ const GenerateButton = styled.button`
 
 function App() {
   const [projects, setProjects] = useState([]);
+  const [userInfo, setUserInfo] = useState(null);
   const [generatedHtml, setGeneratedHtml] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState('preview'); // 'preview' or 'code'
+
+  const handleUserSubmit = (info) => {
+    setUserInfo(info);
+  };
 
   const handleProjectSubmit = (project) => {
     setProjects([...projects, project]);
   };
 
   const handleGenerate = async () => {
+    if (!userInfo) {
+      alert('Please fill in your personal information first');
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const response = await fetch('http://localhost:8000/generate-portfolio', {
@@ -49,18 +102,25 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ projects }),
+        body: JSON.stringify({ 
+          user: userInfo,
+          projects 
+        }),
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
+        throw new Error(errorData.detail || 'Failed to generate portfolio');
       }
       
       const data = await response.json();
       setGeneratedHtml(data.html);
     } catch (error) {
       console.error('Error generating portfolio:', error);
-      // You might want to show an error message to the user here
+      alert(`Error: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }
@@ -69,15 +129,43 @@ function App() {
   return (
     <AppContainer>
       <Header>Portfolio Generator</Header>
-      <ProjectForm onSubmit={handleProjectSubmit} />
-      <Portfolio projects={projects} />
-      <GenerateButton 
-        onClick={handleGenerate}
-        disabled={isGenerating || projects.length === 0}
-      >
-        {isGenerating ? 'Generating...' : 'Generate Portfolio Page'}
-      </GenerateButton>
-      {generatedHtml && <Preview html={generatedHtml} />}
+      <SplitLayout>
+        <LeftPanel>
+          <UserForm onSubmit={handleUserSubmit} />
+          <ProjectForm onSubmit={handleProjectSubmit} />
+          <Portfolio projects={projects} />
+          <GenerateButton 
+            onClick={handleGenerate}
+            disabled={isGenerating || projects.length === 0 || !userInfo}
+          >
+            {isGenerating ? 'Generating...' : 'Generate Portfolio Page'}
+          </GenerateButton>
+        </LeftPanel>
+        <RightPanel>
+          <TabContainer>
+            <Tab 
+              active={activeTab === 'preview'} 
+              onClick={() => setActiveTab('preview')}
+            >
+              Preview
+            </Tab>
+            <Tab 
+              active={activeTab === 'code'} 
+              onClick={() => setActiveTab('code')}
+            >
+              Code
+            </Tab>
+          </TabContainer>
+          {activeTab === 'preview' ? (
+            <Preview html={generatedHtml} />
+          ) : (
+            <CodeView 
+              code={generatedHtml} 
+              onChange={setGeneratedHtml}
+            />
+          )}
+        </RightPanel>
+      </SplitLayout>
     </AppContainer>
   );
 }
