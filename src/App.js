@@ -1,97 +1,87 @@
 import React, { useState } from 'react';
-import ProjectForm from './components/ProjectForm';
-import Portfolio from './components/Portfolio';
+import styled from 'styled-components';
+import CodeView from './components/CodeView';
 import Preview from './components/Preview';
 import UserForm from './components/UserForm';
-import CodeView from './components/CodeView';
-import styled from 'styled-components';
 
 const AppContainer = styled.div`
   min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 20px;
+  background-color: #1e1e1e;
+  color: #fff;
 `;
 
-const Header = styled.h1`
-  text-align: center;
-  color: #333;
-  margin-bottom: 2rem;
-`;
-
-const SplitLayout = styled.div`
-  display: grid;
-  grid-template-columns: 45% 55%;
-  gap: 2rem;
-  margin-top: 2rem;
-`;
-
-const LeftPanel = styled.div`
-  padding: 1rem;
-`;
-
-const RightPanel = styled.div`
-  padding: 1rem;
-  position: sticky;
-  top: 20px;
-  height: calc(100vh - 100px);
-  overflow-y: auto;
-`;
-
-const TabContainer = styled.div`
+const Header = styled.div`
   display: flex;
-  margin-bottom: 1rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #2d2d2d;
+  border-bottom: 1px solid #404040;
+`;
+
+const MainContent = styled.div`
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  height: calc(100vh - 48px); // Adjust based on header height
+`;
+
+const Sidebar = styled.div`
+  background-color: #252526;
+  border-right: 1px solid #404040;
+  overflow-y: auto;
+  padding: 1rem;
+`;
+
+const EditorSection = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const TabBar = styled.div`
+  display: flex;
+  background-color: #2d2d2d;
+  padding: 0.5rem;
+  gap: 0.5rem;
 `;
 
 const Tab = styled.button`
+  background-color: ${props => props.active ? '#1e1e1e' : 'transparent'};
+  color: ${props => props.active ? '#fff' : '#999'};
+  border: none;
   padding: 0.5rem 1rem;
-  background-color: ${props => props.active ? '#007bff' : '#f8f9fa'};
-  color: ${props => props.active ? 'white' : '#333'};
-  border: 1px solid #dee2e6;
-  border-bottom: none;
+  border-radius: 4px;
   cursor: pointer;
-  &:first-child {
-    border-radius: 4px 0 0 0;
-  }
-  &:last-child {
-    border-radius: 0 4px 0 0;
+  &:hover {
+    background-color: ${props => props.active ? '#1e1e1e' : '#333'};
   }
 `;
 
-const GenerateButton = styled.button`
-  display: block;
-  width: 100%;
-  margin: 2rem 0;
-  padding: 1rem 2rem;
-  background-color: #28a745;
+const EditorContainer = styled.div`
+  flex: 1;
+  overflow: hidden;
+`;
+
+const DeployButton = styled.button`
+  background-color: #4CAF50;
   color: white;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
+  margin-left: auto;
   cursor: pointer;
-  font-size: 1.1rem;
-
   &:hover {
-    background-color: #218838;
+    background-color: #45a049;
   }
 `;
 
 function App() {
-  const [projects, setProjects] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const [generatedHtml, setGeneratedHtml] = useState('');
+  const [activeTab, setActiveTab] = useState('preview');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState('preview'); // 'preview' or 'code'
-
-  const handleUserSubmit = (info) => {
-    setUserInfo(info);
-  };
-
-  const handleProjectSubmit = (project) => {
-    setProjects([...projects, project]);
-  };
 
   const handleGenerate = async () => {
     if (!userInfo) {
-      alert('Please fill in your personal information first');
+      alert('Please fill in your information first');
       return;
     }
 
@@ -102,47 +92,44 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          user: userInfo,
-          projects 
-        }),
+        body: JSON.stringify(userInfo),
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again later.');
-        }
-        throw new Error(errorData.detail || 'Failed to generate portfolio');
+        throw new Error('Failed to generate portfolio');
       }
-      
+
       const data = await response.json();
       setGeneratedHtml(data.html);
     } catch (error) {
-      console.error('Error generating portfolio:', error);
-      alert(`Error: ${error.message}`);
+      console.error('Error:', error);
+      alert('Failed to generate portfolio');
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleDeploy = async () => {
+    // Implement deployment logic here
+    alert('Deployment feature coming soon!');
+  };
+
   return (
     <AppContainer>
-      <Header>Portfolio Generator</Header>
-      <SplitLayout>
-        <LeftPanel>
-          <UserForm onSubmit={handleUserSubmit} />
-          <ProjectForm onSubmit={handleProjectSubmit} />
-          <Portfolio projects={projects} />
-          <GenerateButton 
-            onClick={handleGenerate}
-            disabled={isGenerating || projects.length === 0 || !userInfo}
-          >
-            {isGenerating ? 'Generating...' : 'Generate Portfolio Page'}
-          </GenerateButton>
-        </LeftPanel>
-        <RightPanel>
-          <TabContainer>
+      <Header>
+        <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Portfolio Generator</h1>
+        <DeployButton onClick={handleDeploy}>Deploy</DeployButton>
+      </Header>
+      <MainContent>
+        <Sidebar>
+          <UserForm 
+            onSubmit={setUserInfo} 
+            onGenerate={handleGenerate}
+            isGenerating={isGenerating}
+          />
+        </Sidebar>
+        <EditorSection>
+          <TabBar>
             <Tab 
               active={activeTab === 'preview'} 
               onClick={() => setActiveTab('preview')}
@@ -155,17 +142,19 @@ function App() {
             >
               Code
             </Tab>
-          </TabContainer>
-          {activeTab === 'preview' ? (
-            <Preview html={generatedHtml} />
-          ) : (
-            <CodeView 
-              code={generatedHtml} 
-              onChange={setGeneratedHtml}
-            />
-          )}
-        </RightPanel>
-      </SplitLayout>
+          </TabBar>
+          <EditorContainer>
+            {activeTab === 'preview' ? (
+              <Preview html={generatedHtml} />
+            ) : (
+              <CodeView 
+                code={generatedHtml} 
+                onChange={setGeneratedHtml}
+              />
+            )}
+          </EditorContainer>
+        </EditorSection>
+      </MainContent>
     </AppContainer>
   );
 }
