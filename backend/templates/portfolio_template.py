@@ -7,23 +7,23 @@ PORTFOLIO_TEMPLATE = '''
     <title>{name} - Portfolio</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        :root {{
+            --primary-color: #007acc;
+            --text-color: #333;
+            --bg-color: #fff;
         }}
 
         body {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background-color: #ffffff;
+            margin: 0;
+            color: var(--text-color);
         }}
 
         .container {{
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 2rem;
         }}
 
         /* Header */
@@ -108,6 +108,11 @@ PORTFOLIO_TEMPLATE = '''
 
         /* About Section */
         .about {{
+            padding: 100px 0;
+            background: #f8f9fa;
+        }}
+
+        .about-section {{
             padding: 100px 0;
             background: #f8f9fa;
         }}
@@ -314,6 +319,7 @@ PORTFOLIO_TEMPLATE = '''
             <a href="#" class="logo">{name}</a>
             <div class="nav-links">
                 <a href="#about">About</a>
+                <a href="#skills">Skills</a>
                 <a href="#projects">Projects</a>
                 <a href="#contact">Contact</a>
             </div>
@@ -322,23 +328,23 @@ PORTFOLIO_TEMPLATE = '''
 
     <section class="hero">
         <div class="container">
-            <h1>Welcome to My Portfolio</h1>
-            <p>I'm a {profession} passionate about creating amazing web experiences.</p>
+            <h1>{name}</h1>
             <a href="#projects" class="cta-button">View My Work</a>
         </div>
     </section>
 
-    <section id="about" class="about">
+    <div class="about-section">
         <div class="container">
             <div class="about-content">
-                <div class="about-image"></div>
+                <div class="about-image" style="width: 400px; height: 400px; border-radius: 50%; overflow: hidden;">
+                    {profile_image}
+                </div>
                 <div class="about-text">
-                    <p>Hello! I'm {name}, a {profession} with {experience} years of experience. I specialize in {skills} and I'm passionate about {interests}.</p>
-                    <p>When I'm not coding, you can find me {hobbies}.</p>
+                    <p>{about_me}</p>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
     <section id="skills" class="skills">
         <div class="container">
@@ -392,7 +398,7 @@ def generate_portfolio(user_info):
         ''' for skill in skills_list
     ])
 
-    # Generate projects HTML with empty state handling
+    # Generate projects HTML
     projects = user_info.get('projects', [])
     if not projects:
         projects_html = '''
@@ -410,9 +416,9 @@ def generate_portfolio(user_info):
                 <div class="project-info">
                     <h3>{project['title']}</h3>
                     <p class="project-description">{project['description']}</p>
+                    {f'<p class="project-technologies">Technologies: {project["technologies"]}</p>' if project.get("technologies") else ''}
                     <div class="project-links">
                         {f'<a href="{project["github"]}" class="project-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>' if project.get('github') else ''}
-                        {f'<a href="{project["demo"]}" class="project-link" target="_blank"><i class="fab fa-youtube"></i> Demo</a>' if project.get('demo') else ''}
                         {f'<a href="{project["live"]}" class="project-link" target="_blank"><i class="fas fa-external-link-alt"></i> Live</a>' if project.get('live') else ''}
                     </div>
                 </div>
@@ -420,17 +426,19 @@ def generate_portfolio(user_info):
             ''' for project in projects
         ])
 
-    # Replace template variables
+    # Create the profile image HTML
+    profile_image_html = ''
+    if user_info.get('profileImage'):
+        profile_image_html = f'<img src="{user_info["profileImage"]}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">'
+    
+    # Return the formatted template
     return PORTFOLIO_TEMPLATE.format(
         name=user_info['name'],
-        profession=user_info.get('profession', '[Your Profession]'),
-        experience=user_info.get('experience', '[X]'),
-        skills=user_info.get('skills', '[Your Skills/Expertise]'),
-        interests=user_info.get('interests', '[Your Interests]'),
-        hobbies=user_info.get('hobbies', '[Your Hobbies/Interests]'),
+        about_me=user_info.get('about_me', f"Hello! I'm {user_info['name']}. I specialize in {user_info.get('skills', '')} and I'm passionate about {user_info.get('interests', '')}."),
         skills_html=skills_html,
         projects_html=projects_html,
         email=user_info['email'],
         github=user_info['github'],
-        linkedin=user_info['linkedin']
+        linkedin=user_info.get('linkedin', '#'),
+        profile_image=profile_image_html
     )

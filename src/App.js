@@ -153,6 +153,7 @@ function App() {
             onGenerate={handleGenerate}
             onProjectsUpdate={handleProjectsUpdate}
             isGenerating={isGenerating}
+            setIsGenerating={setIsGenerating}
             initialData={userInfo}
           />
         </Sidebar>

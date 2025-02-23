@@ -13,6 +13,8 @@ from services.resume_parser import ResumeParser
 import io
 from services.project_generator import ProjectGenerator
 from services.project_description_generator import ProjectDescriptionGenerator
+from services.github_parser import extract_username, get_projects_with_description, get_user_data
+from services.ai_resume_parser import AIResumeParser
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +52,9 @@ project_generator = ProjectGenerator(client)
 # Initialize the description generator
 description_generator = ProjectDescriptionGenerator(client)
 
+# Initialize AI Resume parser
+ai_resume_parser = AIResumeParser()
+
 # Data validation models
 class Project(BaseModel):
     title: str
@@ -63,9 +68,9 @@ class UserInfo(BaseModel):
     interests: str
     email: str
     github: str
-    linkedin: str
     about_me: str | None = None
     projects: List[dict] | None = None
+    linkedin: str | None = None
 
 class PortfolioRequest(BaseModel):
     user: UserInfo
@@ -73,6 +78,9 @@ class PortfolioRequest(BaseModel):
 
 class LinkedInRequest(BaseModel):
     profile_url: str
+
+class GithubRequest(BaseModel):
+    github_url: str
 
 @app.post("/generate-portfolio")
 async def generate_portfolio_handler(request: UserInfo):
@@ -98,21 +106,54 @@ async def parse_linkedin(request: LinkedInRequest):
 @app.post("/parse-resume")
 async def parse_resume(file: UploadFile = File(...)):
     try:
-        # Read file content
         content = await file.read()
         file_ext = file.filename.lower().split('.')[-1]
         
-        # Parse based on file type
-        if file_ext == 'pdf':
-            data = resume_parser.parse_pdf(io.BytesIO(content))
-        elif file_ext == 'docx':
-            data = resume_parser.parse_docx(io.BytesIO(content))
-        else:
+        if file_ext not in ['pdf', 'docx']:
             raise HTTPException(status_code=400, detail="Unsupported file format")
-            
-        return data
+        
+        # Get basic info from regular parser
+        basic_data = resume_parser.parse_pdf(io.BytesIO(content)) if file_ext == 'pdf' else resume_parser.parse_docx(io.BytesIO(content))
+        
+        # Get enhanced content from AI parser
+        ai_data = ai_resume_parser.parse_resume(io.BytesIO(content), file_ext)
+        
+        # Combine skills from both parsers
+        all_skills = set()
+        if basic_data.get('skills'):
+            all_skills.update(s.strip() for s in basic_data['skills'].split(','))
+        if ai_data.get('skills'):
+            all_skills.update(s.strip() for s in ai_data['skills'].split(','))
+        
+        # Combine the data, preferring regular parser for contact info
+        combined_data = {
+            'name': basic_data.get('name', ''),
+            'email': basic_data.get('email', ''),
+            'github': basic_data.get('github', ''),
+            'linkedin': basic_data.get('linkedin') or ai_data.get('linkedin', ''),
+            'skills': ', '.join(sorted(all_skills)) if all_skills else ai_data.get('skills', ''),
+            'interests': ai_data.get('interests', ''),
+            'about_me': ai_data.get('about_me', '')
+        }
+        
+        return combined_data
     except Exception as e:
         logger.error(f"Resume parsing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/parse-resume-ai")
+async def parse_resume_ai(file: UploadFile = File(...)):
+    try:
+        content = await file.read()
+        file_ext = file.filename.lower().split('.')[-1]
+        
+        if file_ext not in ['pdf', 'docx']:
+            raise HTTPException(status_code=400, detail="Unsupported file format")
+            
+        data = ai_resume_parser.parse_resume(io.BytesIO(content), file_ext)
+        return data
+    except Exception as e:
+        logger.error(f"AI Resume parsing error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-project-description")
@@ -134,6 +175,38 @@ async def generate_project_description(data: dict):
         return {"description": description}
     except Exception as e:
         logger.error(f"Error generating project description: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/fetch-github-projects")
+async def fetch_github_projects(request: GithubRequest):
+    try:
+        username = extract_username(request.github_url)
+        if not username:
+            raise HTTPException(status_code=400, detail="Invalid GitHub URL")
+
+        # Get GitHub projects
+        projects = get_projects_with_description(username)
+        if not projects:
+            return {"projects": []}
+
+        # Transform projects into portfolio format
+        portfolio_projects = []
+        for project in projects:
+            portfolio_project = {
+                "title": project["name"],
+                "description": project["description"],
+                "image": None,  # GitHub doesn't provide preview images
+                "github": project["url"],
+                "live": project.get("homepage"),
+                "demo": None,
+                "technologies": ", ".join(project.get("topics", []))
+            }
+            portfolio_projects.append(portfolio_project)
+
+        return {"projects": portfolio_projects}
+
+    except Exception as e:
+        logger.error(f"Error fetching GitHub projects: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

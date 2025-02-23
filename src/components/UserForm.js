@@ -70,34 +70,6 @@ const Button = styled.button`
   }
 `;
 
-const LinkedInSection = styled.div`
-  margin-bottom: 2rem;
-  padding: 1rem;
-  background-color: #2d2d2d;
-  border: 1px solid #404040;
-  border-radius: 4px;
-`;
-
-const ImportButton = styled.button`
-  background-color: #0077b5;
-  color: white;
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 1rem;
-  font-size: 0.9rem;
-
-  &:hover {
-    background-color: #006097;
-  }
-
-  &:disabled {
-    background-color: #2d2d2d;
-    cursor: not-allowed;
-  }
-`;
-
 const GenerateButton = styled.button`
   width: 100%;
   padding: 0.75rem;
@@ -145,7 +117,44 @@ const FileUploadButton = styled.label`
   }
 `;
 
-const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) => {
+const ImagePreview = styled.img`
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 1rem auto;
+  display: block;
+  background-color: #3c3c3c;
+`;
+
+const ImageUploadButton = styled(FileUploadButton)`
+  width: 200px;
+  margin: 1rem auto;
+  display: block;
+`;
+
+const fetchGithubProjects = async (githubUrl) => {
+  try {
+    const response = await fetch('http://localhost:8000/fetch-github-projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ github_url: githubUrl }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch GitHub projects');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching GitHub projects:', error);
+    return null;
+  }
+};
+
+const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating, initialData }) => {
   const [formData, setFormData] = useState(initialData || {
     name: '',
     email: '',
@@ -153,9 +162,9 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
     linkedin: '',
     about_me: '',
     interests: '',
-    skills: ''
+    skills: '',
+    profileImage: null
   });
-  const [isImporting, setIsImporting] = useState(false);
   const [isParsingResume, setIsParsingResume] = useState(false);
   const [isPortfolioGenerated, setIsPortfolioGenerated] = useState(false);
   const [projects, setProjects] = useState(initialData?.projects || []);
@@ -176,11 +185,32 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsGenerating(true);
+
     try {
-      await onGenerate({ ...formData, projects });
+      // First, fetch GitHub projects if URL is provided
+      let githubProjects = [];
+      if (formData.github) {
+        const projectsData = await fetchGithubProjects(formData.github);
+        if (projectsData && projectsData.projects) {
+          githubProjects = projectsData.projects;
+        }
+      }
+
+      // Add GitHub projects to form data
+      const finalFormData = {
+        ...formData,
+        profileImage: formData.profileImage,
+        projects: githubProjects
+      };
+
+      await onGenerate(finalFormData);
       setIsPortfolioGenerated(true);
     } catch (error) {
-      console.error('Error generating portfolio:', error);
+      console.error('Error:', error);
+      alert('Failed to generate portfolio');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -190,49 +220,6 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
       ...prev,
       [name]: value
     }));
-  };
-
-  const importFromLinkedIn = async () => {
-    if (!formData.linkedin) {
-      alert('Please enter your LinkedIn profile URL');
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const response = await fetch('http://localhost:8000/parse-linkedin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          profile_url: formData.linkedin 
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to import LinkedIn data');
-      }
-
-      const data = await response.json();
-      console.log('LinkedIn data:', data); // Debug log
-
-      setFormData(prev => ({
-        ...prev,
-        name: data.name || prev.name,
-        skills: data.skills || prev.skills,
-        about_me: data.about_me || prev.about_me,
-      }));
-
-      alert('LinkedIn data imported successfully!');
-
-    } catch (error) {
-      console.error('Error importing LinkedIn data:', error);
-      alert(error.message || 'Failed to import LinkedIn data. Please fill in the information manually.');
-    } finally {
-      setIsImporting(false);
-    }
   };
 
   const handleResumeUpload = async (e) => {
@@ -254,9 +241,18 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
       }
 
       const data = await response.json();
+      
+      // Update form with AI-parsed data
       setFormData(prev => ({
         ...prev,
-        ...data
+        skills: data.skills || prev.skills,
+        interests: data.interests || prev.interests,
+        about_me: data.about_me || prev.about_me,
+        linkedin: data.linkedin || prev.linkedin,
+        // Keep other fields
+        name: data.name || prev.name,
+        email: data.email || prev.email,
+        github: data.github || prev.github
       }));
 
       alert('Resume parsed successfully!');
@@ -268,10 +264,43 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
     }
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          profileImage: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <Form onSubmit={handleSubmit}>
       <SectionTitle>Personal Information</SectionTitle>
       
+      <FormGroup>
+        <Label>Profile Image</Label>
+        <ImageUploadButton>
+          Upload Profile Picture
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: 'none' }}
+          />
+        </ImageUploadButton>
+        {formData.profileImage && (
+          <ImagePreview 
+            src={formData.profileImage} 
+            alt="Profile preview" 
+          />
+        )}
+      </FormGroup>
+
       <FileUploadButton>
         {isParsingResume ? 'Parsing Resume...' : 'Upload Resume'}
         <input
@@ -281,28 +310,6 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
           disabled={isParsingResume}
         />
       </FileUploadButton>
-
-      <LinkedInSection>
-        <FormGroup>
-          <Label>LinkedIn Profile URL</Label>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <Input
-              type="url"
-              name="linkedin"
-              value={formData.linkedin}
-              onChange={handleChange}
-              placeholder="https://www.linkedin.com/in/your-profile"
-            />
-            <ImportButton 
-              type="button"
-              onClick={importFromLinkedIn}
-              disabled={isImporting || !formData.linkedin}
-            >
-              {isImporting ? 'Importing...' : 'Import Data'}
-            </ImportButton>
-          </div>
-        </FormGroup>
-      </LinkedInSection>
 
       <FormGroup>
         <Label>Name</Label>
@@ -357,6 +364,16 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, initialData }) =
           value={formData.github}
           onChange={handleChange}
           required
+        />
+      </FormGroup>
+
+      <FormGroup>
+        <Label>LinkedIn URL</Label>
+        <Input
+          type="url"
+          name="linkedin"
+          value={formData.linkedin}
+          onChange={handleChange}
         />
       </FormGroup>
 

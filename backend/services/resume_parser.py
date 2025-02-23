@@ -211,11 +211,11 @@ class ResumeParser:
         email_matches = re.findall(email_pattern, text)
         email = email_matches[0] if email_matches else ''
 
-        # Build about me from summary section
-        about_me = sections.get('summary', '')
-        if not about_me and experiences:
-            # Use most recent experience as fallback
-            about_me = experiences[0].get('description', '')
+        # Enhanced about_me extraction
+        about_me = self._extract_about_me(sections, text)
+        
+        # Enhanced interests extraction
+        interests = self._extract_interests(text, sections)
 
         return {
             'name': name,
@@ -224,18 +224,68 @@ class ResumeParser:
             'about_me': about_me,
             'experiences': experiences,
             'projects': projects,
-            'interests': self._extract_interests(text)
+            'interests': interests
         }
 
-    def _extract_interests(self, text: str) -> str:
-        """Extract interests and hobbies."""
-        interests_pattern = r'(?i)interests|hobbies'
-        matches = re.split(interests_pattern, text)
-        if len(matches) > 1:
-            # Take the text after the "interests" keyword until the next section
-            interests_text = matches[1].split('\n\n')[0]
-            return interests_text.strip()
-        return ''
+    def _extract_about_me(self, sections: Dict[str, str], text: str) -> str:
+        """Extract about me section with fallback options."""
+        about_me = ''
+        
+        # Try to get from summary/objective section first
+        if 'summary' in sections:
+            about_me = sections['summary'].strip()
+        
+        # If no summary, try to find a profile or about section
+        if not about_me:
+            about_pattern = r'(?i)(profile|about( me)?|professional summary).*?\n(.*?)(?=\n\n|\Z)'
+            matches = re.search(about_pattern, text, re.DOTALL)
+            if matches:
+                about_me = matches.group(3).strip()
+        
+        # If still no about me, construct from experience
+        if not about_me and 'experience' in sections:
+            latest_experience = sections['experience'].split('\n')[0]
+            about_me = f"Professional with experience in {latest_experience}"
+        
+        # Clean up the text
+        about_me = re.sub(r'\s+', ' ', about_me).strip()
+        return about_me
+
+    def _extract_interests(self, text: str, sections: Dict[str, str]) -> str:
+        """Enhanced interests extraction with multiple approaches."""
+        interests = ''
+        
+        # Try to find dedicated interests/hobbies section
+        interests_patterns = [
+            r'(?i)interests.*?\n(.*?)(?=\n\n|\Z)',
+            r'(?i)hobbies.*?\n(.*?)(?=\n\n|\Z)',
+            r'(?i)activities.*?\n(.*?)(?=\n\n|\Z)'
+        ]
+        
+        for pattern in interests_patterns:
+            matches = re.search(pattern, text, re.DOTALL)
+            if matches:
+                interests = matches.group(1).strip()
+                break
+        
+        # If no dedicated section, try to extract from about me or summary
+        if not interests and 'summary' in sections:
+            summary = sections['summary']
+            interest_keywords = r'(?i)interested in|passionate about|enjoy|love to'
+            matches = re.search(fr"{interest_keywords}(.*?)(?=\.|$)", summary)
+            if matches:
+                interests = matches.group(1).strip()
+        
+        # Clean up the text
+        if interests:
+            # Remove bullet points and other common separators
+            interests = re.sub(r'[•·⋅∙◦▪️-]', ',', interests)
+            # Clean up multiple spaces and commas
+            interests = re.sub(r'\s*,\s*', ', ', interests)
+            interests = re.sub(r',+', ',', interests)
+            interests = interests.strip(' ,')
+        
+        return interests
 
     def parse_pdf(self, file_content: bytes) -> Dict:
         try:

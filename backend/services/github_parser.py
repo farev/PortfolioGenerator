@@ -64,23 +64,30 @@ def get_user_data(username):
 
 def get_projects_with_description(username):
     repos = get_public_repos(username)
-    if repo is None:
+    if repos is None:
         return None
+    
     projects = []
     for repo in repos:
-        if 'description' not in repo:
+        if not repo.get('description'):
             continue
-        if repo['description'] is None:
-            continue
+            
         name = repo['name']
         description = repo['description']
-        url = repo['url']
-        project = {'name': name, 'description': description, 'url': url}
+        url = repo['html_url']
+        project = {
+            'name': name, 
+            'description': description, 
+            'url': url
+        }
+        
         if 'topics' in repo and repo['topics']:
             project['topics'] = repo['topics']
         if 'homepage' in repo and repo['homepage']:
             project['homepage'] = repo['homepage']
+            
         projects.append(project)
+    
     return projects
             
 
