@@ -19,6 +19,8 @@ from fastapi.responses import HTMLResponse
 from slugify import slugify
 import uuid
 from storage import PortfolioStorage
+import requests
+from urllib.parse import quote
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +64,9 @@ ai_resume_parser = AIResumeParser()
 # Initialize storage
 portfolio_storage = PortfolioStorage()
 
+# Add this near your other environment variables
+UNSPLASH_ACCESS_KEY = os.getenv('UNSPLASH_ACCESS_KEY')
+
 # Data validation models
 class Project(BaseModel):
     title: str
@@ -79,6 +84,7 @@ class UserInfo(BaseModel):
     projects: List[dict] | None = None
     linkedin: str | None = None
     profile_image: str | None = None
+    html_content: str | None = None
 
 class PortfolioRequest(BaseModel):
     user: UserInfo
@@ -204,13 +210,44 @@ async def fetch_github_projects(request: GithubRequest):
         if not projects:
             return {"projects": []}
 
+        # Tech-related search terms for more relevant images
+        tech_keywords = [
+            "programming", "coding", "software development",
+            "computer science", "technology", "web development",
+            "artificial intelligence", "data science", "cybersecurity",
+            "cloud computing", "machine learning", "software engineering"
+        ]
+
         # Transform projects into portfolio format
         portfolio_projects = []
         for project in projects:
+            # Get a random tech image from Unsplash
+            image_url = None
+            try:
+                # Use a random tech keyword for the search
+                search_query = tech_keywords[len(portfolio_projects) % len(tech_keywords)]
+                
+                response = requests.get(
+                    f"https://api.unsplash.com/photos/random",
+                    params={
+                        "query": search_query,
+                        "orientation": "landscape",
+                    },
+                    headers={
+                        "Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"
+                    }
+                )
+                
+                if response.ok:
+                    image_data = response.json()
+                    image_url = image_data["urls"]["regular"]
+            except Exception as e:
+                logger.error(f"Error fetching image for project {project['name']}: {str(e)}")
+
             portfolio_project = {
                 "title": project["name"],
                 "description": project["description"],
-                "image": None,  # GitHub doesn't provide preview images
+                "image": image_url,
                 "github": project["url"],
                 "live": project.get("homepage"),
                 "demo": None,
@@ -225,13 +262,17 @@ async def fetch_github_projects(request: GithubRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/deploy-portfolio")
-async def deploy_portfolio(request: UserInfo):
+async def deploy_portfolio(request: dict):
     try:
-        # Generate the portfolio HTML
-        html = generate_portfolio(request.dict())
+        # Extract HTML content and user info
+        html_content = request.get('html_content')
+        user_info = {k: v for k, v in request.items() if k != 'html_content'}
         
-        # Create a unique slug from the name - handle unicode characters
-        base_slug = slugify(request.name, allow_unicode=False)
+        # Use provided HTML content if available, otherwise generate new
+        html = html_content if html_content else generate_portfolio(user_info)
+        
+        # Create a unique slug from the name
+        base_slug = slugify(request['name'], allow_unicode=False)
         slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
         
         # Save the portfolio
@@ -239,7 +280,7 @@ async def deploy_portfolio(request: UserInfo):
             "html_content": html
         })
         
-        # Generate the portfolio URL - just return the slug
+        # Generate the portfolio URL
         portfolio_url = f"/{slug}"
         
         logger.info(f"Portfolio deployed with slug: {slug}")

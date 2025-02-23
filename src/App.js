@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import CodeView from './components/CodeView';
 import Preview from './components/Preview';
 import UserForm from './components/UserForm';
+import config from './config';
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -180,14 +181,15 @@ function App() {
         return;
       }
 
-      const response = await fetch('http://localhost:8000/deploy-portfolio', {
+      const response = await fetch(`${config.apiBaseUrl}/deploy-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...userInfo,
-          base_url: window.location.origin
+          base_url: window.location.origin,
+          html_content: generatedHtml
         })
       });
 
@@ -198,14 +200,19 @@ function App() {
       const data = await response.json();
       const fullUrl = `http://localhost:8000/portfolio${data.url}`;
       setDeployedUrl(fullUrl);
-      alert(`Portfolio deployed successfully! Your portfolio is live at: ${fullUrl}`);
+      
+      // Open the deployed portfolio in a new tab
+      window.open(fullUrl, '_blank');
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to deploy portfolio');
     }
   };
-  
-// change Folio size
+
+  const handleHtmlChange = (newHtml) => {
+    setGeneratedHtml(newHtml);
+  };
+
   return (
     <AppContainer>
       <Header>
@@ -240,7 +247,10 @@ function App() {
           <EditorContainer>
             {activeTab === 'preview' ? (
               <>
-                <Preview html={generatedHtml} />
+                <Preview 
+                  html={generatedHtml} 
+                  onHtmlChange={handleHtmlChange} 
+                />
                 <ButtonContainer>
                   <DeployButton 
                     onClick={handleDeploy}

@@ -244,10 +244,10 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
     const file = e.target.files[0];
     if (!file) return;
 
+    setIsParsingResume(true);
     const formData = new FormData();
     formData.append('file', file);
 
-    setIsParsingResume(true);
     try {
       const response = await fetch('http://localhost:8000/parse-resume', {
         method: 'POST',
@@ -260,23 +260,20 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
 
       const data = await response.json();
       
-      // Update form with AI-parsed data
-      setFormData(prev => ({
-        ...prev,
-        skills: data.skills || prev.skills,
-        interests: data.interests || prev.interests,
-        about_me: data.about_me || prev.about_me,
-        linkedin: data.linkedin || prev.linkedin,
-        // Keep other fields
-        name: data.name || prev.name,
-        email: data.email || prev.email,
-        github: data.github || prev.github
+      // Directly update form data with parsed information
+      setFormData(prevData => ({
+        ...prevData,
+        name: data.name || prevData.name,
+        email: data.email || prevData.email,
+        github: data.github || prevData.github,
+        skills: data.skills || prevData.skills,
+        interests: data.interests || prevData.interests,
+        about_me: data.about_me || prevData.about_me
       }));
 
-      alert('Resume parsed successfully!');
     } catch (error) {
-      console.error('Error parsing resume:', error);
-      alert('Failed to parse resume. Please fill in the information manually.');
+      console.error('Error:', error);
+      alert('Failed to parse resume');
     } finally {
       setIsParsingResume(false);
     }
