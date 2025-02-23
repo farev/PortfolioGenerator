@@ -17,6 +17,7 @@ PORTFOLIO_TEMPLATE = '''
         body {{
             line-height: 1.6;
             color: #333;
+            background-color: #ffffff;
         }}
 
         .container {{
@@ -29,7 +30,6 @@ PORTFOLIO_TEMPLATE = '''
         header {{
             padding: 20px 0;
             background: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
 
         nav {{
@@ -39,9 +39,9 @@ PORTFOLIO_TEMPLATE = '''
         }}
 
         .logo {{
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            color: #333;
+            color: #000;
             text-decoration: none;
         }}
 
@@ -53,43 +53,57 @@ PORTFOLIO_TEMPLATE = '''
         .nav-links a {{
             text-decoration: none;
             color: #666;
+            font-size: 1rem;
             transition: color 0.3s;
         }}
 
         .nav-links a:hover {{
-            color: #4A90E2;
+            color: #000;
         }}
 
         /* Hero Section */
         .hero {{
-            padding: 100px 0;
+            padding: 120px 0;
             text-align: center;
             background: white;
         }}
 
         .hero h1 {{
-            font-size: 3rem;
+            font-size: 3.5rem;
             margin-bottom: 20px;
+            color: #000;
+            font-weight: bold;
         }}
 
         .hero p {{
             font-size: 1.25rem;
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }}
 
         .cta-button {{
-            display: inline-block;
-            padding: 12px 30px;
-            background: #4A90E2;
+            display: inline-flex;
+            align-items: center;
+            padding: 15px 30px;
+            background: #1a73e8;
             color: white;
             text-decoration: none;
-            border-radius: 30px;
+            border-radius: 25px;
+            font-size: 1rem;
             transition: background 0.3s;
         }}
 
         .cta-button:hover {{
-            background: #357ABD;
+            background: #1557b0;
+        }}
+
+        .cta-button::after {{
+            content: "→";
+            margin-left: 8px;
+            font-size: 1.2rem;
         }}
 
         /* About Section */
@@ -99,25 +113,66 @@ PORTFOLIO_TEMPLATE = '''
         }}
 
         .about-content {{
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
             align-items: center;
-            gap: 50px;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }}
 
         .about-image {{
-            width: 300px;
-            height: 300px;
+            width: 400px;
+            height: 400px;
             border-radius: 50%;
-            object-fit: cover;
-            background: #ddd;
+            background: #f0f0f0;
         }}
 
-        .section-title {{
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 50px;
+        .about-text {{
+            font-size: 1.1rem;
+            color: #333;
+        }}
+
+        .about-text p {{
+            margin-bottom: 20px;
+        }}
+
+        /* Skills Section */
+        .skills {{
+            padding: 100px 0;
+            background: white;
+        }}
+
+        .skills-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }}
+
+        .skill-card {{
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }}
+
+        .skill-card:hover {{
+            transform: translateY(-5px);
+        }}
+
+        .skill-info {{
+            padding: 20px;
+        }}
+
+        .skill-info h3 {{
+            margin-bottom: 10px;
+        }}
+
+        .skill-info p {{
+            color: #666;
+            margin-bottom: 15px;
         }}
 
         /* Projects Section */
@@ -208,19 +263,48 @@ PORTFOLIO_TEMPLATE = '''
 
         /* Responsive Design */
         @media (max-width: 768px) {{
-            .about-content {{
-                flex-direction: column;
-                text-align: center;
-            }}
-
             .hero h1 {{
                 font-size: 2.5rem;
             }}
 
-            .about-image {{
-                width: 200px;
-                height: 200px;
+            .about-content {{
+                grid-template-columns: 1fr;
+                text-align: center;
             }}
+
+            .about-image {{
+                width: 300px;
+                height: 300px;
+                margin: 0 auto;
+            }}
+        }}
+
+        /* Project Links */
+        .project-links {{
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }}
+
+        .project-link {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #2d2d2d;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }}
+
+        .project-link:hover {{
+            background-color: #404040;
+        }}
+
+        .project-link i {{
+            font-size: 1rem;
         }}
     </style>
 </head>
@@ -238,17 +322,19 @@ PORTFOLIO_TEMPLATE = '''
 
     <section class="hero">
         <div class="container">
-            <h1>{name}</h1>
+            <h1>Welcome to My Portfolio</h1>
+            <p>I'm a {profession} passionate about creating amazing web experiences.</p>
+            <a href="#projects" class="cta-button">View My Work</a>
         </div>
     </section>
 
     <section id="about" class="about">
         <div class="container">
-            <h2 class="section-title">About Me</h2>
             <div class="about-content">
+                <div class="about-image"></div>
                 <div class="about-text">
-                    <p>{about_me}</p>
-                    <p>My interests include {interests}</p>
+                    <p>Hello! I'm {name}, a {profession} with {experience} years of experience. I specialize in {skills} and I'm passionate about {interests}.</p>
+                    <p>When I'm not coding, you can find me {hobbies}.</p>
                 </div>
             </div>
         </div>
@@ -306,35 +392,45 @@ def generate_portfolio(user_info):
         ''' for skill in skills_list
     ])
 
-    # Generate projects HTML
-    projects_html = '\n'.join([
-        f'''
-        <div class="project-card">
-            <div class="project-image-container">
-                <img src="{project['image']}" alt="{project['title']}" class="project-image">
-            </div>
-            <div class="project-info">
-                <h3>{project['title']}</h3>
-                <p class="project-description">{project['description']}</p>
-                {f'<div class="project-tech">{project["technologies"]}</div>' if project.get("technologies") else ''}
-                <div class="project-links">
-                    {f'<a href="{project["github"]}" class="project-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>' if project.get('github') else ''}
-                    {f'<a href="{project["demo"]}" class="project-link" target="_blank"><i class="fab fa-youtube"></i> Demo</a>' if project.get('demo') else ''}
-                    {f'<a href="{project["live"]}" class="project-link" target="_blank"><i class="fas fa-external-link-alt"></i> Live</a>' if project.get('live') else ''}
+    # Generate projects HTML with empty state handling
+    projects = user_info.get('projects', [])
+    if not projects:
+        projects_html = '''
+        <div class="empty-projects">
+            <p>No projects added yet.</p>
+        </div>
+        '''
+    else:
+        projects_html = '\n'.join([
+            f'''
+            <div class="project-card">
+                <div class="project-image-container">
+                    <img src="{project['image']}" alt="{project['title']}" class="project-image">
+                </div>
+                <div class="project-info">
+                    <h3>{project['title']}</h3>
+                    <p class="project-description">{project['description']}</p>
+                    <div class="project-links">
+                        {f'<a href="{project["github"]}" class="project-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>' if project.get('github') else ''}
+                        {f'<a href="{project["demo"]}" class="project-link" target="_blank"><i class="fab fa-youtube"></i> Demo</a>' if project.get('demo') else ''}
+                        {f'<a href="{project["live"]}" class="project-link" target="_blank"><i class="fas fa-external-link-alt"></i> Live</a>' if project.get('live') else ''}
+                    </div>
                 </div>
             </div>
-        </div>
-        ''' for project in user_info.get('projects', [])
-    ])
+            ''' for project in projects
+        ])
 
     # Replace template variables
     return PORTFOLIO_TEMPLATE.format(
         name=user_info['name'],
-        about_me=user_info['about_me'],
+        profession=user_info.get('profession', '[Your Profession]'),
+        experience=user_info.get('experience', '[X]'),
+        skills=user_info.get('skills', '[Your Skills/Expertise]'),
+        interests=user_info.get('interests', '[Your Interests]'),
+        hobbies=user_info.get('hobbies', '[Your Hobbies/Interests]'),
         skills_html=skills_html,
         projects_html=projects_html,
-        interests=user_info['interests'],
         email=user_info['email'],
         github=user_info['github'],
         linkedin=user_info['linkedin']
-    ) 
+    )
