@@ -78,10 +78,11 @@ class LinkedInRequest(BaseModel):
 async def generate_portfolio_handler(request: UserInfo):
     try:
         user_data = request.dict()
+        logger.info("Generating portfolio...")  # Clean, simple log
         html = generate_portfolio(user_data)
         return {"html": html}
     except Exception as e:
-        logger.error(f"Portfolio generation error: {str(e)}")
+        logger.error(f"Portfolio generation failed: {str(e)}")  # Keep error logs concise
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/parse-linkedin")
@@ -117,10 +118,16 @@ async def parse_resume(file: UploadFile = File(...)):
 @app.post("/generate-project-description")
 async def generate_project_description(data: dict):
     try:
-        if 'youtube_url' not in data:
-            raise HTTPException(status_code=400, detail="YouTube URL is required")
+        if not data.get('title') or not data.get('image'):
+            raise HTTPException(status_code=400, detail="Title and image are required")
 
-        description = description_generator.generate_description(data['youtube_url'])
+        description = description_generator.generate_description(
+            title=data['title'],
+            image=data['image'],
+            brief_description=data.get('description', ''),
+            youtube_url=data.get('youtube_url')
+        )
+
         if not description:
             raise HTTPException(status_code=400, detail="Could not generate description")
 

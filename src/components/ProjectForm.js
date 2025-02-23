@@ -99,7 +99,9 @@ const ProjectForm = ({ onProjectsUpdate }) => {
     title: '',
     image: null,
     description: '',
-    youtube_url: ''
+    github: '',
+    demo: '',
+    live: ''
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -125,47 +127,19 @@ const ProjectForm = ({ onProjectsUpdate }) => {
     }));
   };
 
-  const handleAddProject = (e) => {
-    e.preventDefault();
-    if (!newProject.title || !newProject.image) {
-      alert('Please provide a title and image');
-      return;
-    }
-
-    onProjectsUpdate(prevProjects => {
-      const updatedProjects = [...(prevProjects || []), newProject];
-      return updatedProjects;
-    });
-
-    // Reset only the form fields
-    setNewProject({
-      title: '',
-      image: null,
-      description: '',
-      youtube_url: ''
-    });
-
-    // Clear the file input
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) {
-      fileInput.value = '';
-    }
-  };
-
-  const generateDescription = async () => {
-    if (!newProject.youtube_url) {
-      alert('Please provide a YouTube URL');
-      return;
-    }
-
-    setIsGenerating(true);
+  const generateDescription = async (projectData) => {
     try {
       const response = await fetch('http://localhost:8000/generate-project-description', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ youtube_url: newProject.youtube_url }),
+        body: JSON.stringify({
+          title: projectData.title,
+          image: projectData.image,
+          description: projectData.description,
+          projectLink: projectData.projectLink
+        }),
       });
 
       if (!response.ok) {
@@ -173,13 +147,54 @@ const ProjectForm = ({ onProjectsUpdate }) => {
       }
 
       const data = await response.json();
-      setNewProject(prev => ({
-        ...prev,
-        description: data.description
-      }));
+      return data.description;
     } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to generate description');
+      console.error('Error generating description:', error);
+      return projectData.description;
+    }
+  };
+
+  const handleAddProject = async (e) => {
+    e.preventDefault();
+    if (!newProject.title || !newProject.image || !newProject.description) {
+      alert('Please provide a title, image, and description');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Generate enhanced description
+      const enhancedDescription = await generateDescription(newProject);
+      
+      // Create final project with enhanced description
+      const finalProject = {
+        ...newProject,
+        description: enhancedDescription,
+      };
+
+      // Update projects list
+      onProjectsUpdate(prevProjects => {
+        const updatedProjects = [...(prevProjects || []), finalProject];
+        return updatedProjects;
+      });
+
+      // Reset form
+      setNewProject({
+        title: '',
+        image: null,
+        description: '',
+        github: '',
+        demo: '',
+        live: ''
+      });
+
+      // Clear file input
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    } catch (error) {
+      console.error('Error adding project:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -199,32 +214,6 @@ const ProjectForm = ({ onProjectsUpdate }) => {
         />
         
         <Input
-          type="url"
-          name="youtube_url"
-          value={newProject.youtube_url}
-          onChange={handleInputChange}
-          placeholder="YouTube Demo URL"
-        />
-
-        {newProject.youtube_url && (
-          <GenerateButton 
-            type="button"
-            onClick={generateDescription}
-            disabled={isGenerating}
-          >
-            {isGenerating ? 'Generating...' : 'Generate Description'}
-          </GenerateButton>
-        )}
-        
-        <TextArea
-          name="description"
-          value={newProject.description}
-          onChange={handleInputChange}
-          placeholder="Project Description"
-          required
-        />
-
-        <Input
           type="file"
           accept="image/*"
           onChange={handleImageChange}
@@ -235,8 +224,43 @@ const ProjectForm = ({ onProjectsUpdate }) => {
           <ImagePreview src={newProject.image} alt="Project preview" />
         )}
 
-        <AddButton onClick={handleAddProject}>
-          Add Project
+        <TextArea
+          name="description"
+          value={newProject.description}
+          onChange={handleInputChange}
+          placeholder="Project Description"
+          required
+        />
+
+        <Input
+          type="url"
+          name="github"
+          value={newProject.github}
+          onChange={handleInputChange}
+          placeholder="GitHub Repository URL (Optional)"
+        />
+
+        <Input
+          type="url"
+          name="demo"
+          value={newProject.demo}
+          onChange={handleInputChange}
+          placeholder="Demo Video URL (Optional)"
+        />
+
+        <Input
+          type="url"
+          name="live"
+          value={newProject.live}
+          onChange={handleInputChange}
+          placeholder="Live Project URL (Optional)"
+        />
+
+        <AddButton 
+          onClick={handleAddProject}
+          disabled={isGenerating}
+        >
+          {isGenerating ? 'Enhancing Description...' : 'Add Project'}
         </AddButton>
       </div>
     </FormContainer>
