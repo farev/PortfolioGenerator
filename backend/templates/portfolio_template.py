@@ -386,6 +386,9 @@ PORTFOLIO_TEMPLATE = '''
 '''
 
 def generate_portfolio(user_info):
+    # Add debugging log
+    print("Profile image in user_info:", bool(user_info.get('profile_image')))
+    
     # Convert skills string to HTML
     skills_list = [skill.strip() for skill in user_info['skills'].split(',')]
     skills_html = '\n'.join([
@@ -426,15 +429,21 @@ def generate_portfolio(user_info):
             ''' for project in projects
         ])
 
+    # Format the about me section
+    about_me_text = f"Hello my name is {user_info['name']}! I am {user_info.get('about_me', '')}."
+
     # Create the profile image HTML
     profile_image_html = ''
-    if user_info.get('profileImage'):
-        profile_image_html = f'<img src="{user_info["profileImage"]}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">'
+    if user_info.get('profile_image'):
+        print("Creating profile image HTML")
+        profile_image_html = f'<img src="{user_info["profile_image"]}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">'
+    else:
+        print("No profile image found in user_info")
     
     # Return the formatted template
     return PORTFOLIO_TEMPLATE.format(
         name=user_info['name'],
-        about_me=user_info.get('about_me', f"Hello! I'm {user_info['name']}. I specialize in {user_info.get('skills', '')} and I'm passionate about {user_info.get('interests', '')}."),
+        about_me=about_me_text,  # Use the formatted about me text
         skills_html=skills_html,
         projects_html=projects_html,
         email=user_info['email'],

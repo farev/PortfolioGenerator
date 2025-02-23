@@ -39,16 +39,20 @@ const Input = styled.input`
 `;
 
 const AddButton = styled.button`
-  background-color: #2ea043;
+  width: 200px;
+  margin: 1rem auto;
+  display: block;
+  padding: 0.75rem;
+  background: linear-gradient(90deg,rgb(122, 13, 120),rgb(89, 44, 186)) !important;
   color: white;
-  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 1rem;
+  transition: background-color 0.3s;
 
   &:hover {
-    background-color: #2c974b;
+    background: linear-gradient(90deg, rgb(122, 13, 120, 0.61),rgb(9, 9, 120)) !important;
+    transform: scale(1.05);
   }
 
   &:disabled {

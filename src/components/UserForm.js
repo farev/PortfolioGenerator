@@ -110,15 +110,18 @@ const SectionTitle = styled.h2`
 `;
 
 const FileUploadButton = styled.label`
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-   background: linear-gradient(90deg,rgb(122, 13, 120),rgb(89, 44, 186)) !important;
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(90deg,rgb(122, 13, 120),rgb(89, 44, 186)) !important;
   color: white;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s;
   text-align: center;
-  margin-bottom: 1rem;
+  margin: 1rem auto;
+  box-sizing: border-box;
+  border: none;
 
   &:hover {
     background: linear-gradient(90deg, rgb(122, 13, 120, 0.61),rgb(9, 9, 120)) !important;
@@ -140,9 +143,7 @@ const ImagePreview = styled.img`
 `;
 
 const ImageUploadButton = styled(FileUploadButton)`
-  width: 200px;
   margin: 1rem auto;
-  display: block;
 `;
 
 const fetchGithubProjects = async (githubUrl) => {
@@ -209,12 +210,17 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
         }
       }
 
-      // Add GitHub projects to form data
+      // Add console logs to check the image data
+      console.log("Profile image before sending:", formData.profileImage?.substring(0, 100));
+      
       const finalFormData = {
         ...formData,
-        profileImage: formData.profileImage,
+        profile_image: formData.profileImage,
         projects: githubProjects
       };
+
+      // Log the final data being sent
+      console.log("Final form data profile_image:", finalFormData.profile_image?.substring(0, 100));
 
       await onGenerate(finalFormData);
       setIsPortfolioGenerated(true);

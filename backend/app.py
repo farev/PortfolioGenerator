@@ -71,6 +71,7 @@ class UserInfo(BaseModel):
     about_me: str | None = None
     projects: List[dict] | None = None
     linkedin: str | None = None
+    profile_image: str | None = None
 
 class PortfolioRequest(BaseModel):
     user: UserInfo
@@ -86,11 +87,18 @@ class GithubRequest(BaseModel):
 async def generate_portfolio_handler(request: UserInfo):
     try:
         user_data = request.dict()
-        logger.info("Generating portfolio...")  # Clean, simple log
+        # Add debug logs
+        print("Received user_data keys:", user_data.keys())
+        print("Profile image present:", "profile_image" in user_data)
+        if "profile_image" in user_data:
+            print("Profile image type:", type(user_data["profile_image"]))
+            print("Profile image starts with:", user_data["profile_image"][:50] if user_data["profile_image"] else "None")
+            
+        logger.info("Generating portfolio...")
         html = generate_portfolio(user_data)
         return {"html": html}
     except Exception as e:
-        logger.error(f"Portfolio generation failed: {str(e)}")  # Keep error logs concise
+        logger.error(f"Portfolio generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/parse-linkedin")
