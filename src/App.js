@@ -10,12 +10,13 @@ const AppContainer = styled.div`
   color: #fff;
 `;
 
+//background-color: #2d2d2d
+//border-bottom: 1px solid #404040;
 const Header = styled.div`
   display: flex;
   align-items: center;
   padding: 0.5rem 1rem;
-  background-color: #2d2d2d;
-  border-bottom: 1px solid #404040;
+  background-color: #1C1A1E; 
 `;
 
 const MainContent = styled.div`
@@ -24,9 +25,11 @@ const MainContent = styled.div`
   height: calc(100vh - 48px); // Adjust based on header height
 `;
 
+//background-color: #252526;
+//border-right: 1px solid #404040;
 const Sidebar = styled.div`
-  background-color: #252526;
-  border-right: 1px solid #404040;
+  background-color: #1E1E1E;
+  
   overflow-y: auto;
   padding: 1rem;
 `;
@@ -38,13 +41,13 @@ const EditorSection = styled.div`
 
 const TabBar = styled.div`
   display: flex;
-  background-color: #2d2d2d;
+  background-color: #1e1e1e;
   padding: 0.5rem;
   gap: 0.5rem;
 `;
 
 const Tab = styled.button`
-  background-color: ${props => props.$active ? '#1e1e1e' : 'transparent'};
+  background-color: ${props => props.$active ? '#262626' : 'transparent'};
   color: ${props => props.$active ? '#fff' : '#999'};
   border: none;
   padding: 0.5rem 1rem;
@@ -60,8 +63,9 @@ const EditorContainer = styled.div`
   overflow: hidden;
 `;
 
+//background-color: linear-gradient #7218AA, #B620E0);
 const DeployButton = styled.button`
-  background-color: #4CAF50;
+  background: linear-gradient(90deg,rgb(89, 44, 186),rgb(224, 99, 32)) !important;
   color: white;
   padding: 0.5rem 1rem;
   border: none;
@@ -69,9 +73,13 @@ const DeployButton = styled.button`
   margin-left: auto;
   cursor: pointer;
   &:hover {
-    background-color: #45a049;
+    background: linear-gradient(90deg,rgb(9, 9, 120), rgb(158, 69, 21)) !important;
+    transform: scale(1.05);
+
   }
 `;
+
+
 
 function App() {
   const [userInfo, setUserInfo] = useState(null);
@@ -140,11 +148,12 @@ function App() {
     // Implement deployment logic here
     alert('Deployment feature coming soon!');
   };
-
+  
+// change Folio size
   return (
     <AppContainer>
       <Header>
-        <h1 style={{ fontSize: '1.2rem', margin: 0 }}>Portfolio Generator</h1>
+        <h1 style={{ fontSize: '1.2rem', margin: 0 }}><img src="FolioAILogo.png" alt="FolioAI" width={120}/></h1>
         <DeployButton onClick={handleDeploy}>Deploy</DeployButton>
       </Header>
       <MainContent>

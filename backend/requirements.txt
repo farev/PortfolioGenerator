@@ -17,7 +17,7 @@ httpx==0.28.1
 idna==3.10
 Jinja2==3.1.5
 jiter==0.8.2
-linkedin-api==2.3.1
+#linkedin-api==2.3.1
 lxml==5.3.1
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
@@ -48,7 +48,7 @@ typer==0.15.1
 typing_extensions==4.12.2
 urllib3==2.3.0
 uvicorn==0.34.0
-uvloop==0.21.0
+#uvloop==0.21.0
 watchfiles==1.0.4
 webdriver-manager==4.0.2
 websocket-client==1.8.0
