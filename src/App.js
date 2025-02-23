@@ -79,13 +79,42 @@ const DeployButton = styled.button`
   }
 `;
 
+const ButtonContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 1rem;
+`;
 
+const DeployedUrlContainer = styled.div`
+  background: #2d2d2d;
+  padding: 1rem;
+  border-radius: 4px;
+  text-align: center;
+
+  p {
+    margin: 0 0 0.5rem;
+    color: #ffffff;
+  }
+
+  a {
+    color: #2ecc71;
+    text-decoration: none;
+    word-break: break-all;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+`;
 
 function App() {
   const [userInfo, setUserInfo] = useState(null);
   const [generatedHtml, setGeneratedHtml] = useState('');
   const [activeTab, setActiveTab] = useState('preview');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [deployedUrl, setDeployedUrl] = useState(null);
 
   const handleGenerate = async (formData) => {
     setIsGenerating(true);
@@ -145,8 +174,35 @@ function App() {
   };
 
   const handleDeploy = async () => {
-    // Implement deployment logic here
-    alert('Deployment feature coming soon!');
+    try {
+      if (!userInfo) {
+        alert('Please generate a portfolio first!');
+        return;
+      }
+
+      const response = await fetch('http://localhost:8000/deploy-portfolio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...userInfo,
+          base_url: window.location.origin
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to deploy portfolio');
+      }
+
+      const data = await response.json();
+      const fullUrl = `http://localhost:8000/portfolio${data.url}`;
+      setDeployedUrl(fullUrl);
+      alert(`Portfolio deployed successfully! Your portfolio is live at: ${fullUrl}`);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to deploy portfolio');
+    }
   };
   
 // change Folio size
@@ -183,7 +239,25 @@ function App() {
           </TabBar>
           <EditorContainer>
             {activeTab === 'preview' ? (
-              <Preview html={generatedHtml} />
+              <>
+                <Preview html={generatedHtml} />
+                <ButtonContainer>
+                  <DeployButton 
+                    onClick={handleDeploy}
+                    disabled={!generatedHtml}
+                  >
+                    Deploy Portfolio
+                  </DeployButton>
+                  {deployedUrl && (
+                    <DeployedUrlContainer>
+                      <p>Your portfolio is live at:</p>
+                      <a href={deployedUrl} target="_blank" rel="noopener noreferrer">
+                        {deployedUrl}
+                      </a>
+                    </DeployedUrlContainer>
+                  )}
+                </ButtonContainer>
+              </>
             ) : (
               <CodeView 
                 code={generatedHtml} 

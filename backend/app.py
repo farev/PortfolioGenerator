@@ -15,6 +15,10 @@ from services.project_generator import ProjectGenerator
 from services.project_description_generator import ProjectDescriptionGenerator
 from services.github_parser import extract_username, get_projects_with_description, get_user_data
 from services.ai_resume_parser import AIResumeParser
+from fastapi.responses import HTMLResponse
+from slugify import slugify
+import uuid
+from storage import PortfolioStorage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +58,9 @@ description_generator = ProjectDescriptionGenerator(client)
 
 # Initialize AI Resume parser
 ai_resume_parser = AIResumeParser()
+
+# Initialize storage
+portfolio_storage = PortfolioStorage()
 
 # Data validation models
 class Project(BaseModel):
@@ -216,6 +223,40 @@ async def fetch_github_projects(request: GithubRequest):
     except Exception as e:
         logger.error(f"Error fetching GitHub projects: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deploy-portfolio")
+async def deploy_portfolio(request: UserInfo):
+    try:
+        # Generate the portfolio HTML
+        html = generate_portfolio(request.dict())
+        
+        # Create a unique slug from the name - handle unicode characters
+        base_slug = slugify(request.name, allow_unicode=False)
+        slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
+        
+        # Save the portfolio
+        portfolio_storage.save_portfolio(slug, {
+            "html_content": html
+        })
+        
+        # Generate the portfolio URL - just return the slug
+        portfolio_url = f"/{slug}"
+        
+        logger.info(f"Portfolio deployed with slug: {slug}")
+        return {
+            "url": portfolio_url,
+            "slug": slug
+        }
+    except Exception as e:
+        logger.error(f"Portfolio deployment failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/portfolio/{slug}")
+async def get_portfolio(slug: str):
+    html_content = portfolio_storage.get_portfolio(slug)
+    if not html_content:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    return HTMLResponse(content=html_content, status_code=200)
 
 if __name__ == "__main__":
     import uvicorn

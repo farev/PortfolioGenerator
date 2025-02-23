@@ -326,13 +326,6 @@ PORTFOLIO_TEMPLATE = '''
         </nav>
     </header>
 
-    <section class="hero">
-        <div class="container">
-            <h1>{name}</h1>
-            <a href="#projects" class="cta-button">View My Work</a>
-        </div>
-    </section>
-
     <div class="about-section">
         <div class="container">
             <div class="about-content">
@@ -430,7 +423,7 @@ def generate_portfolio(user_info):
         ])
 
     # Format the about me section
-    about_me_text = f"Hello my name is {user_info['name']}! I am {user_info.get('about_me', '')}."
+    about_me_text = f"Hello my name is {user_info['name']}! I am {user_info.get('about_me', '')}"
 
     # Create the profile image HTML
     profile_image_html = ''
