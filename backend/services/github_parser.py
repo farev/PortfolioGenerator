@@ -2,6 +2,8 @@ import requests
 import base64
 import pprint
 from urllib.parse import urlparse
+from PIL import Image
+from io import BytesIO
 
 def get_public_repos(username):
     url = f"https://api.github.com/users/{username}/repos"
@@ -43,6 +45,25 @@ def extract_username(url):
     if len(path_parts) >= 1:
         return path_parts[0]  # First part of the path is the username
     return None
+
+def get_image_if_not_default(user_data):
+    url = user_data['avatar_url']
+    try:
+        response = requests.get(url)
+        avatar = Image.open(BytesIO(response.content))
+    except:
+        return None
+    colors = set()
+    pixels = avatar.load()
+    width, height = avatar.size
+    for x in range(width):
+        for y in range(height):
+            r, g, b = pixels[x, y]
+            colors.add((r, g, b))
+    if len(colors) > 100:
+        return avatar
+    else:
+        return None
 
 def get_user_data(username):
     user = get_user(username)
@@ -94,7 +115,11 @@ def get_projects_with_description(username):
 if __name__ == '__main__':
     username = input("Enter GitHub username: ")
     username = extract_username(username)
-    pprint.pp(get_user_data(username))
+    user_data = get_user_data(username)
+    img = get_image_if_not_default(user_data)
+    if img is not None:
+        img.show()
+    # pprint.pp(get_user_data(username))
 
     # projects = get_projects_with_description(username)
     # for project in projects:
