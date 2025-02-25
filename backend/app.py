@@ -277,15 +277,22 @@ async def deploy_portfolio(request: dict):
             logger.info(f"Updating existing portfolio with slug: {slug}")
         else:
             # Create new portfolio
-            base_slug = slugify(user_info['name'], allow_unicode=False)
+            base_slug = slugify(user_info.get('name', 'portfolio'))  # Provide default name
             slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
             logger.info(f"Creating new portfolio with slug: {slug}")
         
-        # Save the portfolio
+        # Save the portfolio with all user info
         portfolio_storage.save_portfolio(slug, {
             "html_content": html_content,
             "github_url": user_info.get('github'),
             "linkedin_url": user_info.get('linkedin'),
+            "name": user_info.get('name'),
+            "email": user_info.get('email'),
+            "about_me": user_info.get('about_me'),
+            "skills": user_info.get('skills'),
+            "interests": user_info.get('interests'),
+            "profile_image": user_info.get('profile_image'),
+            "projects": user_info.get('projects', []),
             "slug": slug
         })
         
@@ -318,7 +325,18 @@ async def check_portfolio(request: dict):
         if existing_portfolio:
             return {
                 "exists": True,
-                "portfolio": existing_portfolio,
+                "portfolio": {
+                    "name": existing_portfolio.get("name"),
+                    "email": existing_portfolio.get("email"),
+                    "github": existing_portfolio.get("github_url"),
+                    "linkedin": existing_portfolio.get("linkedin_url"),
+                    "about_me": existing_portfolio.get("about_me"),
+                    "skills": existing_portfolio.get("skills"),
+                    "interests": existing_portfolio.get("interests"),
+                    "profile_image": existing_portfolio.get("profile_image"),
+                    "projects": existing_portfolio.get("projects", []),
+                    "slug": existing_portfolio.get("slug")
+                },
                 "html": existing_portfolio.get("html_content")
             }
         return {"exists": False}

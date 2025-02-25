@@ -116,10 +116,21 @@ function App() {
   const [activeTab, setActiveTab] = useState('preview');
   const [isGenerating, setIsGenerating] = useState(false);
   const [deployedUrl, setDeployedUrl] = useState(null);
+  const [isPortfolioGenerated, setIsPortfolioGenerated] = useState(false);
 
   const handleGenerate = async (formData) => {
     setIsGenerating(true);
     try {
+      // If HTML content is provided, use it directly
+      if (formData.html_content) {
+        setGeneratedHtml(formData.html_content);
+        setUserInfo(formData);
+        setActiveTab('preview');
+        setIsPortfolioGenerated(true);
+        return;
+      }
+
+      // Otherwise, generate new portfolio
       const response = await fetch(`${config.apiBaseUrl}/generate-portfolio`, {
         method: 'POST',
         headers: {

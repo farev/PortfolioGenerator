@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import ProjectForm from './ProjectForm';
+import config from '../config';
 
 const Form = styled.form`
   max-width: 800px;
@@ -30,6 +31,9 @@ const Input = styled.input`
   border-radius: 4px;
   color: #ffffff;
   font-size: 0.9rem;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding-right: 2rem;
 
   &:focus {
     outline: none;
@@ -98,10 +102,6 @@ const DiamondIcon = () => (
   
 );
 
-//<svg fill="#ffffff" width="8" height="8" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-    //<path d="M208,512a24.84,24.84,0,0,1-23.34-16l-39.84-103.6a16.06,16.06,0,0,0-9.19-9.19L32,343.34a25,25,0,0,1,0-46.68l103.6-39.84a16.06,16.06,0,0,0,9.19-9.19L184.66,144a25,25,0,0,1,46.68,0l39.84,103.6a16.06,16.06,0,0,0,9.19,9.19l103,39.63A25.49,25.49,0,0,1,400,320.52a24.82,24.82,0,0,1-16,22.82l-103.6,39.84a16.06,16.06,0,0,0-9.19,9.19L231.34,496A24.84,24.84,0,0,1,208,512Zm66.85-254.84h0Z"></path>
-  //s</svg>
-
 const SectionTitle = styled.h2`
   color: #ffffff;
   font-size: 1.1rem;
@@ -146,6 +146,11 @@ const ImageUploadButton = styled(FileUploadButton)`
   margin: 1rem auto;
 `;
 
+const LinkedInSection = styled.div`
+  margin-bottom: ${props => props.expanded ? '2rem' : '0'};
+  transition: all 0.3s ease;
+`;
+
 const fetchGithubProjects = async (githubUrl) => {
   try {
     const response = await fetch('http://localhost:8000/fetch-github-projects', {
@@ -178,7 +183,8 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
     skills: '',
     profileImage: null
   });
-  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [showFullForm, setShowFullForm] = useState(false);
+  const [isCheckingLinkedIn, setIsCheckingLinkedIn] = useState(false);
   const [isPortfolioGenerated, setIsPortfolioGenerated] = useState(false);
   const [projects, setProjects] = useState(initialData?.projects || []);
 
@@ -244,7 +250,7 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
     const file = e.target.files[0];
     if (!file) return;
 
-    setIsParsingResume(true);
+    setIsCheckingLinkedIn(true);
     const formData = new FormData();
     formData.append('file', file);
 
@@ -275,7 +281,7 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
       console.error('Error:', error);
       alert('Failed to parse resume');
     } finally {
-      setIsParsingResume(false);
+      setIsCheckingLinkedIn(false);
     }
   };
 
@@ -293,128 +299,180 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
     }
   };
 
+  const handleLinkedInCheck = async (e) => {
+    e.preventDefault();
+    if (!formData.linkedin) return;
+
+    setIsCheckingLinkedIn(true);
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/check-portfolio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ linkedin: formData.linkedin }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check portfolio');
+      }
+
+      const data = await response.json();
+      if (data.exists) {
+        // Portfolio exists, load it directly
+        onGenerate({
+          ...data.portfolio,
+          html_content: data.html
+        });
+        setIsPortfolioGenerated(true);
+      } else {
+        // No existing portfolio, show the full form
+        setShowFullForm(true);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to check portfolio');
+    } finally {
+      setIsCheckingLinkedIn(false);
+    }
+  };
+
   return (
     <Form onSubmit={handleSubmit}>
-      <SectionTitle>Personal Information</SectionTitle>
-      
-      <FormGroup>
-        <Label>Profile Image</Label>
-        <ImageUploadButton>
-          Upload Profile Picture
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            style={{ display: 'none' }}
+      <LinkedInSection expanded={!showFullForm}>
+        <FormGroup>
+          <Label>LinkedIn URL</Label>
+          <Input
+            type="url"
+            name="linkedin"
+            value={formData.linkedin}
+            onChange={handleChange}
+            placeholder="https://linkedin.com/in/username"
           />
-        </ImageUploadButton>
-        {formData.profileImage && (
-          <ImagePreview 
-            src={formData.profileImage} 
-            alt="Profile preview" 
-          />
+        </FormGroup>
+        {!showFullForm && (
+          <GenerateButton 
+            type="button"
+            onClick={handleLinkedInCheck}
+            disabled={isCheckingLinkedIn || !formData.linkedin}
+          >
+            {isCheckingLinkedIn ? 'Checking...' : 'Continue'}
+          </GenerateButton>
         )}
-      </FormGroup>
+      </LinkedInSection>
 
-      <FileUploadButton>
-        {isParsingResume ? 'Parsing Resume...' : 'Upload Resume'}
-        <input
-          type="file"
-          accept=".pdf,.docx"
-          onChange={handleResumeUpload}
-          disabled={isParsingResume}
-        />
-      </FileUploadButton>
-
-      <FormGroup>
-        <Label>Name</Label>
-        <Input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Skills</Label>
-        <TextArea
-          name="skills"
-          value={formData.skills}
-          onChange={handleChange}
-          placeholder="e.g., JavaScript, React, Node.js"
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Interests</Label>
-        <Input
-          type="text"
-          name="interests"
-          value={formData.interests}
-          onChange={handleChange}
-          placeholder="e.g., Web Development, AI, Open Source"
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>Email</Label>
-        <Input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>GitHub URL</Label>
-        <Input
-          type="url"
-          name="github"
-          value={formData.github}
-          onChange={handleChange}
-          required
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>LinkedIn URL</Label>
-        <Input
-          type="url"
-          name="linkedin"
-          value={formData.linkedin}
-          onChange={handleChange}
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label>About Me</Label>
-        <TextArea
-          name="about_me"
-          value={formData.about_me}
-          onChange={handleChange}
-          placeholder="Tell us about yourself..."
-        />
-      </FormGroup>
-
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
-        <GenerateButton 
-          type="submit"
-          disabled={isGenerating}
-        >
-          {isGenerating ? 'Generating...' : (
+      {showFullForm && (
         <>
-          <DiamondIcon /> Generate Portfolio
+          <SectionTitle>Personal Information</SectionTitle>
+          <FormGroup>
+            <Label>Profile Image</Label>
+            <ImageUploadButton>
+              Upload Profile Picture
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+            </ImageUploadButton>
+            {formData.profileImage && (
+              <ImagePreview 
+                src={formData.profileImage} 
+                alt="Profile preview" 
+              />
+            )}
+          </FormGroup>
+
+          <FileUploadButton>
+            {isCheckingLinkedIn ? 'Parsing Resume...' : 'Upload Resume'}
+            <input
+              type="file"
+              accept=".pdf,.docx"
+              onChange={handleResumeUpload}
+              disabled={isCheckingLinkedIn}
+            />
+          </FileUploadButton>
+
+          <FormGroup>
+            <Label>Name</Label>
+            <Input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Skills</Label>
+            <TextArea
+              name="skills"
+              value={formData.skills}
+              onChange={handleChange}
+              placeholder="e.g., JavaScript, React, Node.js"
+              required
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Interests</Label>
+            <Input
+              type="text"
+              name="interests"
+              value={formData.interests}
+              onChange={handleChange}
+              placeholder="e.g., Web Development, AI, Open Source"
+              required
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>Email</Label>
+            <Input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>GitHub URL</Label>
+            <Input
+              type="url"
+              name="github"
+              value={formData.github}
+              onChange={handleChange}
+              required
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>About Me</Label>
+            <TextArea
+              name="about_me"
+              value={formData.about_me}
+              onChange={handleChange}
+              placeholder="Tell us about yourself..."
+            />
+          </FormGroup>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+            <GenerateButton 
+              type="submit"
+              disabled={isGenerating}
+            >
+              {isGenerating ? 'Generating...' : (
+                <>
+                  <DiamondIcon /> Generate Portfolio
+                </>
+              )}
+            </GenerateButton>
+          </div>
         </>
-      )
-          }
-        </GenerateButton>
-      </div>
+      )}
 
       {isPortfolioGenerated && (
         <ProjectForm onProjectsUpdate={handleProjectsUpdate} />

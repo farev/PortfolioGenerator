@@ -17,6 +17,13 @@ class PortfolioStorage:
                 "html_content": data.get("html_content"),
                 "github_url": data.get("github_url"),
                 "linkedin_url": data.get("linkedin_url"),
+                "name": data.get("name"),
+                "email": data.get("email"),
+                "about_me": data.get("about_me"),
+                "skills": data.get("skills"),
+                "interests": data.get("interests"),
+                "profile_image": data.get("profile_image"),
+                "projects": data.get("projects", []),
                 "slug": slug  # Always include the slug
             }
             with open(file_path, 'w') as f:
