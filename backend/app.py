@@ -84,6 +84,7 @@ class UserInfo(BaseModel):
     projects: List[dict] | None = None
     linkedin: str | None = None
     profile_image: str | None = None
+    profileImage: str | None = None
     html_content: str | None = None
 
 class PortfolioRequest(BaseModel):
@@ -97,15 +98,11 @@ class GithubRequest(BaseModel):
     github_url: str
 
 @app.post("/generate-portfolio")
-async def generate_portfolio_handler(request: UserInfo):
+async def generate_portfolio_handler(request: dict):
     try:
-        user_data = request.dict()
-        # Add debug logs
-        print("Received user_data keys:", user_data.keys())
-        print("Profile image present:", "profile_image" in user_data)
-        if "profile_image" in user_data:
-            print("Profile image type:", type(user_data["profile_image"]))
-            print("Profile image starts with:", user_data["profile_image"][:50] if user_data["profile_image"] else "None")
+        user_data = request.copy()
+        if 'profileImage' in user_data and not user_data.get('profile_image'):
+            user_data['profile_image'] = user_data.pop('profileImage')
             
         logger.info("Generating portfolio...")
         html = generate_portfolio(user_data)
@@ -268,22 +265,33 @@ async def deploy_portfolio(request: dict):
         html_content = request.get('html_content')
         user_info = {k: v for k, v in request.items() if k != 'html_content'}
         
-        # Use provided HTML content if available, otherwise generate new
-        html = html_content if html_content else generate_portfolio(user_info)
+        # Check if a portfolio with same GitHub or LinkedIn exists
+        existing_portfolio = portfolio_storage.find_portfolio(
+            github_url=user_info.get('github'),
+            linkedin_url=user_info.get('linkedin')
+        )
         
-        # Create a unique slug from the name
-        base_slug = slugify(request['name'], allow_unicode=False)
-        slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
+        if existing_portfolio and existing_portfolio.get('slug'):
+            # Update existing portfolio
+            slug = existing_portfolio['slug']
+            logger.info(f"Updating existing portfolio with slug: {slug}")
+        else:
+            # Create new portfolio
+            base_slug = slugify(user_info['name'], allow_unicode=False)
+            slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
+            logger.info(f"Creating new portfolio with slug: {slug}")
         
         # Save the portfolio
         portfolio_storage.save_portfolio(slug, {
-            "html_content": html
+            "html_content": html_content,
+            "github_url": user_info.get('github'),
+            "linkedin_url": user_info.get('linkedin'),
+            "slug": slug
         })
         
         # Generate the portfolio URL
         portfolio_url = f"/{slug}"
         
-        logger.info(f"Portfolio deployed with slug: {slug}")
         return {
             "url": portfolio_url,
             "slug": slug
@@ -298,6 +306,25 @@ async def get_portfolio(slug: str):
     if not html_content:
         raise HTTPException(status_code=404, detail="Portfolio not found")
     return HTMLResponse(content=html_content, status_code=200)
+
+@app.post("/check-portfolio")
+async def check_portfolio(request: dict):
+    try:
+        linkedin_url = request.get('linkedin')
+        if not linkedin_url:
+            return {"exists": False}
+            
+        existing_portfolio = portfolio_storage.find_portfolio(linkedin_url=linkedin_url)
+        if existing_portfolio:
+            return {
+                "exists": True,
+                "portfolio": existing_portfolio,
+                "html": existing_portfolio.get("html_content")
+            }
+        return {"exists": False}
+    except Exception as e:
+        logger.error(f"Error checking portfolio: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

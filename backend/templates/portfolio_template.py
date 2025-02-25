@@ -416,6 +416,7 @@ def generate_portfolio(user_info):
                     <div class="project-links">
                         {f'<a href="{project["github"]}" class="project-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>' if project.get('github') else ''}
                         {f'<a href="{project["live"]}" class="project-link" target="_blank"><i class="fas fa-external-link-alt"></i> Live</a>' if project.get('live') else ''}
+                        {f'<a href="{project["demo"]}" class="project-link" target="_blank"><i class="fab fa-youtube"></i> Demo</a>' if project.get('demo') else ''}
                     </div>
                 </div>
             </div>

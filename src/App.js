@@ -120,7 +120,7 @@ function App() {
   const handleGenerate = async (formData) => {
     setIsGenerating(true);
     try {
-      const response = await fetch('http://localhost:8000/generate-portfolio', {
+      const response = await fetch(`${config.apiBaseUrl}/generate-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ function App() {
         projects
       };
 
-      const response = await fetch('http://localhost:8000/generate-portfolio', {
+      const response = await fetch(`${config.apiBaseUrl}/generate-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ function App() {
       }
 
       const data = await response.json();
-      const fullUrl = `http://localhost:8000/portfolio${data.url}`;
+      const fullUrl = `${config.apiBaseUrl}/portfolio${data.url}`;
       setDeployedUrl(fullUrl);
       
       // Open the deployed portfolio in a new tab
