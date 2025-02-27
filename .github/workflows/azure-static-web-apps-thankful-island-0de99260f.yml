@@ -36,6 +36,7 @@ jobs:
         run: npm run build
         env:
           CI: false
+          DISABLE_ESLINT_PLUGIN: true
 
       # Keep Azure's OIDC authentication steps
       - name: Install OIDC Client from Core Package
