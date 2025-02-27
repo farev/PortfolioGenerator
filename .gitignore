@@ -64,3 +64,5 @@ htmlcov/
 # Portfolio storage
 backend/portfolios/
 backend/portfolios/*
+*.html
+*.json

@@ -11,8 +11,8 @@ class PortfolioStorage:
         
     def save_portfolio(self, slug: str, data: dict):
         try:
-            file_path = os.path.join(self.storage_dir, f"{slug}.json")
-            # Ensure all required fields are present
+            # Save JSON data
+            json_path = os.path.join(self.storage_dir, f"{slug}.json")
             portfolio_data = {
                 "html_content": data.get("html_content"),
                 "github_url": data.get("github_url"),
@@ -24,18 +24,32 @@ class PortfolioStorage:
                 "interests": data.get("interests"),
                 "profile_image": data.get("profile_image"),
                 "projects": data.get("projects", []),
-                "slug": slug  # Always include the slug
+                "slug": slug
             }
-            with open(file_path, 'w') as f:
+            with open(json_path, 'w') as f:
                 json.dump(portfolio_data, f)
+
+            # Save HTML content separately
+            html_path = os.path.join(self.storage_dir, f"{slug}.html")
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(data.get("html_content", ""))
+
+            logger.info(f"Saved portfolio data to {json_path} and HTML to {html_path}")
         except Exception as e:
             logger.error(f"Error saving portfolio: {str(e)}")
             raise
             
     def get_portfolio(self, slug: str) -> str:
         try:
-            file_path = os.path.join(self.storage_dir, f"{slug}.json")
-            with open(file_path, 'r') as f:
+            # Try to get HTML from dedicated HTML file first
+            html_path = os.path.join(self.storage_dir, f"{slug}.html")
+            if os.path.exists(html_path):
+                with open(html_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            
+            # Fall back to JSON if HTML file doesn't exist
+            json_path = os.path.join(self.storage_dir, f"{slug}.json")
+            with open(json_path, 'r') as f:
                 data = json.load(f)
                 return data.get('html_content')
         except FileNotFoundError:
