@@ -24,10 +24,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r backend/requirements.txt
+        pip install gunicorn
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'your-app-name'  # Replace with your app name
+        app-name: 'folioai'  # Replace with your actual Azure App Service name
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: ./backend 

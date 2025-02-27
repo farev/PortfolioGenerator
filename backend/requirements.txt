@@ -63,3 +63,4 @@ python-slugify==5.0.2
 aiofiles==0.7.0
 python-jose==3.3.0
 azure-openai==1.0.0
+gunicorn==21.2.0
