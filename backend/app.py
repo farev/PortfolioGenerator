@@ -42,6 +42,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Also add CORS headers to all responses
+@app.middleware("http")
+async def add_cors_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "https://folioai.tech"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
 # Initialize Azure OpenAI client
 try:
     client = AzureOpenAI(
