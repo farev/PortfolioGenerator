@@ -309,6 +309,8 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin':'*',
+          'Access-Control-Allow-Methods':'*'
         },
         body: JSON.stringify({ linkedin: formData.linkedin }),
       });
