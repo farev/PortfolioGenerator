@@ -305,11 +305,15 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
 
     setIsCheckingLinkedIn(true);
     try {
+      // Try using a mode: 'cors' and adding additional headers
       const response = await fetch(`${config.apiBaseUrl}/check-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': window.location.origin,
         },
+        mode: 'cors',
         body: JSON.stringify({ linkedin: formData.linkedin }),
         credentials: 'include'
       });
