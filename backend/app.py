@@ -37,32 +37,18 @@ ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 origins = [
     "http://localhost:3000",  # Local React development
     "http://localhost:8000",  # Local API development
+    "https://folioai.tech",   # Production frontend
+    "https://www.folioai.tech",
+    "https://thankful-island-0de99260f.4.azurestaticapps.net"  # Azure Static Web App URL
 ]
-
-if ENVIRONMENT == 'production':
-    origins.extend([
-        "https://folioai.tech",
-        "https://www.folioai.tech",
-    ])
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,  # Use the specific origins list instead of "*"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add CORS headers based on environment
-@app.middleware("http")
-async def add_cors_headers(request, call_next):
-    response = await call_next(request)
-    origin = "http://localhost:3000" if ENVIRONMENT == 'development' else "https://folioai.tech"
-    response.headers["Access-Control-Allow-Origin"] = origin
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
 
 # Initialize Azure OpenAI client
 try:
