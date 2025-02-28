@@ -30,23 +30,37 @@ load_dotenv()
 
 app = FastAPI()
 
-# Configure CORS
+# Get environment
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+
+# Configure origins based on environment
+origins = [
+    "http://localhost:3000",  # Local React development
+    "http://localhost:8000",  # Local API development
+]
+
+if ENVIRONMENT == 'production':
+    origins.extend([
+        "https://folioai.tech",
+        "https://www.folioai.tech",
+    ])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://folioai.tech",  # Production frontend
-        "http://localhost:3000",  # Local development
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 
-# Also add CORS headers to all responses
+# Add CORS headers based on environment
 @app.middleware("http")
 async def add_cors_headers(request, call_next):
     response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "https://folioai.tech"
+    origin = "http://localhost:3000" if ENVIRONMENT == 'development' else "https://folioai.tech"
+    response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
