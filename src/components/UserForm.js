@@ -305,17 +305,14 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
 
     setIsCheckingLinkedIn(true);
     try {
-      // Try using a mode: 'cors' and adding additional headers
       const response = await fetch(`${config.apiBaseUrl}/check-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Origin': window.location.origin,
         },
-        mode: 'cors',
         body: JSON.stringify({ linkedin: formData.linkedin }),
-        credentials: 'include'
+        mode: 'cors',
+        credentials: 'omit'
       });
 
       if (!response.ok) {
@@ -336,7 +333,28 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to check portfolio');
+      
+      // If the fetch fails, try a different approach
+      try {
+        // Create a simple form submission that will open in a new tab
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `${config.apiBaseUrl}/check-portfolio`;
+        form.target = '_blank';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'linkedin';
+        input.value = formData.linkedin;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+      } catch (secondError) {
+        console.error('Second attempt failed:', secondError);
+        alert('Failed to check portfolio');
+      }
     } finally {
       setIsCheckingLinkedIn(false);
     }
