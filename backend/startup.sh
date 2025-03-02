@@ -1,6 +1,12 @@
 #!/bin/bash
+echo "Starting application..."
 cd /home/site/wwwroot
-# Install dependencies if not already installed
+echo "Current directory: $(pwd)"
+echo "Listing files:"
+ls -la
+
+echo "Installing dependencies again to be safe..."
 pip install -r requirements.txt
-# Start the application
-gunicorn --bind=0.0.0.0:$PORT --timeout 600 app:app 
+
+echo "Starting FastAPI application with Gunicorn..."
+gunicorn --bind=0.0.0.0:$PORT --timeout 600 --log-level debug app:app 
