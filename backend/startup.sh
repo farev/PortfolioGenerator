@@ -1,17 +1,9 @@
 #!/bin/bash
 echo "Starting application..."
-cd /home/site/wwwroot
+cd /app
 echo "Current directory: $(pwd)"
-echo "Listing files:"
-ls -la
-
 echo "Python version:"
 python --version
 
-echo "Installing dependencies again to be safe..."
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-
 echo "Starting FastAPI application with Gunicorn..."
-export PORT=${PORT:-8000}
 gunicorn --bind=0.0.0.0:$PORT --timeout 600 --log-level debug --workers 4 app:app 
