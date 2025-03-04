@@ -25,6 +25,9 @@ jobs:
         pip install -r backend/requirements.txt
         pip install gunicorn
         
+    - name: Make startup script executable
+      run: chmod +x backend/startup.sh
+
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:

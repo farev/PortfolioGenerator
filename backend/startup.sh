@@ -1,14 +1,21 @@
 #!/bin/bash
-echo "Starting application in Azure App Service..."
-cd /home/site/wwwroot
-echo "Current directory: $(pwd)"
-echo "Python version:"
-python --version
+echo "Starting custom startup script"
 
+# Create and activate virtual environment if it doesn't exist
+if [ ! -d "/home/site/wwwroot/backend/antenv" ]; then
+    echo "Creating virtual environment..."
+    python -m venv /home/site/wwwroot/backend/antenv
+fi
+
+# Activate virtual environment
+source /home/site/wwwroot/backend/antenv/bin/activate
+
+# Install dependencies
 echo "Installing dependencies..."
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install --upgrade pip
+pip install -r /home/site/wwwroot/backend/requirements.txt
 
-echo "Starting FastAPI application with Gunicorn..."
-export PORT=${PORT:-8000}
-gunicorn --bind=0.0.0.0:$PORT --timeout 600 --log-level debug --workers 4 app:app 
+# Start the application
+echo "Starting application with Gunicorn..."
+cd /home/site/wwwroot/backend
+gunicorn --bind=0.0.0.0:8000 --timeout 600 --workers 4 app:app 
