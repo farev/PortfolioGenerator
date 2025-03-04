@@ -178,7 +178,7 @@ const Preview = ({ html, onHtmlChange }) => {
         iframeDoc.removeEventListener('blur', handleChange);
       };
     }
-  }, [html, onHtmlChange, defaultContent]);
+  }, [html, onHtmlChange]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
