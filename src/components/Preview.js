@@ -67,16 +67,6 @@ const FileUploadButton = styled.label`
   }
 `;
 
-const Input = styled.input`
-  width: 100%;
-  padding: 8px;
-  margin: 8px 0;
-  background: #2d2d2d;
-  border: 1px solid #404040;
-  color: white;
-  border-radius: 4px;
-`;
-
 const ButtonGroup = styled.div`
   display: flex;
   gap: 10px;
@@ -178,7 +168,7 @@ const Preview = ({ html, onHtmlChange }) => {
         iframeDoc.removeEventListener('blur', handleChange);
       };
     }
-  }, [html, onHtmlChange]);
+  }, [html, onHtmlChange, defaultContent]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];

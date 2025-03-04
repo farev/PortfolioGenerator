@@ -7,13 +7,6 @@ const FormContainer = styled.div`
   border-top: 1px solid #404040;
 `;
 
-const ProjectCard = styled.div`
-  background: #2d2d2d;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-`;
-
 const ImagePreview = styled.img`
   width: 100%;
   height: 200px;
@@ -75,26 +68,6 @@ const TextArea = styled.textarea`
   &:focus {
     outline: none;
     border-color: #007acc;
-  }
-`;
-
-const GenerateButton = styled.button`
-  background-color: #0077b5;
-  color: white;
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 1rem;
-  width: 100%;
-
-  &:hover {
-    background-color: #006097;
-  }
-
-  &:disabled {
-    background-color: #2d2d2d;
-    cursor: not-allowed;
   }
 `;
 

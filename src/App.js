@@ -116,7 +116,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('preview');
   const [isGenerating, setIsGenerating] = useState(false);
   const [deployedUrl, setDeployedUrl] = useState(null);
-  const [isPortfolioGenerated, setIsPortfolioGenerated] = useState(false);
+  const [portfolioHtml, setPortfolioHtml] = useState('');
 
   const handleGenerate = async (formData) => {
     setIsGenerating(true);
@@ -126,7 +126,7 @@ function App() {
         setGeneratedHtml(formData.html_content);
         setUserInfo(formData);
         setActiveTab('preview');
-        setIsPortfolioGenerated(true);
+        setPortfolioHtml(formData.html_content);
         return;
       }
 
@@ -147,6 +147,7 @@ function App() {
       setGeneratedHtml(data.html);
       setUserInfo(formData);
       setActiveTab('preview');
+      setPortfolioHtml(data.html);
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to generate portfolio');
