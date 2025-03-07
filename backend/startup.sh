@@ -1,8 +1,9 @@
 #!/bin/bash
 echo "Starting custom startup script"
 
-# Create a user-writable directory for packages
+# Create directories
 mkdir -p /home/site/wwwroot/.python_packages
+mkdir -p /home/LogFiles/python
 
 # Install dependencies to a writable location
 echo "Installing dependencies..."
@@ -11,15 +12,13 @@ python -m pip install --target=/home/site/wwwroot/.python_packages -r /home/site
 # Add the custom package directory to PYTHONPATH
 export PYTHONPATH=/home/site/wwwroot/.python_packages:$PYTHONPATH
 
-# Print Python version and path for debugging
+# Print debug info
 echo "Python version:"
 python --version
 echo "Python path:"
-python -c "import sys; print(sys.path)"
-echo "Checking for fastapi:"
-python -c "import sys; sys.path.insert(0, '/home/site/wwwroot/.python_packages'); import fastapi; print(f'FastAPI version: {fastapi.__version__}')" || echo "FastAPI not found"
+echo $PYTHONPATH
 
 # Start the application
 echo "Starting application with Gunicorn..."
 cd /home/site/wwwroot
-PYTHONPATH=/home/site/wwwroot/.python_packages:$PYTHONPATH gunicorn --bind=0.0.0.0:8000 app:app 2>&1 | tee /home/LogFiles/python/gunicorn.log 
+PYTHONPATH=$PYTHONPATH gunicorn --bind=0.0.0.0:8000 --timeout 600 --workers 2 app:app 
