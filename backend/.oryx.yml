@@ -1,0 +1,6 @@
+language: python
+version: "3.10"
+build:
+  commands:
+    - pip install --upgrade pip
+    - pip install -r requirements.txt 
