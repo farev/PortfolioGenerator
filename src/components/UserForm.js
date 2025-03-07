@@ -186,7 +186,10 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
   const handleProjectsUpdate = (updateFn) => {
     const updatedProjects = updateFn(projects);
     setProjects(updatedProjects);
-    onProjectsUpdate(updatedProjects);
+    
+    if (onProjectsUpdate) {
+      onProjectsUpdate(updatedProjects);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -462,7 +465,9 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
       )}
 
       {isPortfolioGenerated && (
-        <ProjectForm onProjectsUpdate={handleProjectsUpdate} />
+        <ProjectForm 
+          onProjectsUpdate={handleProjectsUpdate}
+        />
       )}
     </Form>
   );

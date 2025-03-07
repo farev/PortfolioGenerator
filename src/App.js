@@ -117,6 +117,8 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [deployedUrl, setDeployedUrl] = useState(null);
   const [portfolioHtml, setPortfolioHtml] = useState('');
+  const [generatedPortfolio, setGeneratedPortfolio] = useState(null);
+  const [portfolioUrl, setPortfolioUrl] = useState(null);
 
   const handleGenerate = async (formData) => {
     setIsGenerating(true);
@@ -127,6 +129,7 @@ function App() {
         setUserInfo(formData);
         setActiveTab('preview');
         setPortfolioHtml(formData.html_content);
+        setGeneratedPortfolio(formData);
         return;
       }
 
@@ -148,6 +151,7 @@ function App() {
       setUserInfo(formData);
       setActiveTab('preview');
       setPortfolioHtml(data.html);
+      setGeneratedPortfolio(data);
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to generate portfolio');
@@ -156,21 +160,24 @@ function App() {
     }
   };
 
-  const handleProjectsUpdate = async (projects) => {
-    if (!userInfo) return;
-
+  const handleProjectsUpdate = async (updatedProjects) => {
     try {
-      const updatedUserInfo = {
-        ...userInfo,
-        projects
+      // Get the current portfolio data
+      const portfolioData = {
+        ...generatedPortfolio, // Your existing portfolio data
+        projects: updatedProjects,
       };
 
-      const response = await fetch(`${config.apiBaseUrl}/generate-portfolio`, {
+      // Make API call to update the portfolio
+      const response = await fetch(`${config.apiBaseUrl}/deploy-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedUserInfo),
+        body: JSON.stringify({
+          ...portfolioData,
+          html_content: portfolioHtml, // Include the current HTML content
+        }),
       });
 
       if (!response.ok) {
@@ -178,11 +185,21 @@ function App() {
       }
 
       const data = await response.json();
-      setGeneratedHtml(data.html);
-      setUserInfo(updatedUserInfo);
+      
+      // Update local state with new data
+      setGeneratedPortfolio(prevPortfolio => ({
+        ...prevPortfolio,
+        projects: updatedProjects
+      }));
+
+      // Optionally update the URL if needed
+      if (data.url) {
+        setPortfolioUrl(data.url);
+      }
+
     } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to update portfolio with new project');
+      console.error('Error updating portfolio:', error);
+      throw new Error('Failed to update portfolio');
     }
   };
 
@@ -238,7 +255,7 @@ function App() {
             onProjectsUpdate={handleProjectsUpdate}
             isGenerating={isGenerating}
             setIsGenerating={setIsGenerating}
-            initialData={userInfo}
+            initialData={generatedPortfolio}
           />
         </Sidebar>
         <EditorSection>

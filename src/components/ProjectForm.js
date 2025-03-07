@@ -78,7 +78,8 @@ const ProjectForm = ({ onProjectsUpdate }) => {
     description: '',
     github: '',
     demo: '',
-    live: ''
+    live: '',
+    technologies: ''
   });
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -145,15 +146,17 @@ const ProjectForm = ({ onProjectsUpdate }) => {
       
       // Create final project with enhanced description
       const finalProject = {
-        ...newProject,
+        title: newProject.title,
         description: enhancedDescription,
+        image: newProject.image,
+        github: newProject.github || '',
+        demo: newProject.demo || '',
+        live: newProject.live || '',
+        technologies: newProject.technologies || ''
       };
 
-      // Update projects list
-      onProjectsUpdate(prevProjects => {
-        const updatedProjects = [...(prevProjects || []), finalProject];
-        return updatedProjects;
-      });
+      // Update projects list using the callback pattern
+      onProjectsUpdate(currentProjects => [...(currentProjects || []), finalProject]);
 
       // Reset form
       setNewProject({
@@ -162,7 +165,8 @@ const ProjectForm = ({ onProjectsUpdate }) => {
         description: '',
         github: '',
         demo: '',
-        live: ''
+        live: '',
+        technologies: ''
       });
 
       // Clear file input
@@ -231,6 +235,14 @@ const ProjectForm = ({ onProjectsUpdate }) => {
           value={newProject.live}
           onChange={handleInputChange}
           placeholder="Live Project URL (Optional)"
+        />
+
+        <Input
+          type="text"
+          name="technologies"
+          value={newProject.technologies}
+          onChange={handleInputChange}
+          placeholder="Technologies Used (comma-separated)"
         />
 
         <AddButton 
