@@ -23,9 +23,9 @@ log_with_timestamp "Upgrading pip..."
 python -m ensurepip
 python -m pip install --upgrade pip
 
-# Install dependencies with verbose output
+# Install dependencies with pre-built wheels
 log_with_timestamp "Installing dependencies..."
-python -m pip install --target=/home/site/wwwroot/.python_packages -r /home/site/wwwroot/requirements.txt --verbose
+python -m pip install --target=/home/site/wwwroot/.python_packages -r /home/site/wwwroot/requirements.txt --only-binary :all: --prefer-binary
 
 # Add the custom package directory to PYTHONPATH
 export PYTHONPATH=/home/site/wwwroot/.python_packages:$PYTHONPATH
