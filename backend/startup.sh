@@ -21,6 +21,10 @@ python -m pip install --upgrade pip
 log_with_timestamp "Installing dependencies..."
 pip install -r /home/site/wwwroot/requirements.txt
 
+# Install spaCy model
+log_with_timestamp "Installing spaCy model..."
+python -m spacy download en_core_web_sm
+
 # Start the application
 log_with_timestamp "Starting application..."
 cd /home/site/wwwroot
