@@ -1,6 +1,6 @@
 # Core dependencies
-fastapi==0.115.8
-starlette>=0.27.0,<0.28.0  # Explicitly set compatible version range
+fastapi==0.104.1  # This version is known to work with Starlette 0.27.x
+starlette==0.27.0  # Pin to exact version for consistency
 uvicorn==0.34.0
 python-multipart==0.0.20
 python-dotenv==1.0.1
