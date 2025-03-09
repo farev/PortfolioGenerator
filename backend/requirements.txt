@@ -13,15 +13,11 @@ gunicorn==21.2.0
 # OpenAI
 openai==1.12.0
 
-# Data processing
-numpy==1.26.3
-pandas==2.0.3
-
-# PDF and document processing
+# Document processing
 PyPDF2==3.0.1
 python-docx==1.0.0
 
-# Web scraping and parsing
+# Web scraping
 beautifulsoup4==4.12.2
 selenium==4.15.2
 webdriver-manager==4.0.1
