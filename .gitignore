@@ -12,6 +12,7 @@ ENV/
 .env
 .venv
 pip-debug.log*
+local_requirements.txt
 
 # Node/React
 node_modules/
