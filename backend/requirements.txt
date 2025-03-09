@@ -23,7 +23,7 @@ selenium==4.15.2
 webdriver-manager==4.0.1
 
 # NLP and text processing
-spacy==3.8.4
+spacy==3.7.2
 
 # Authentication
 python-jose==3.3.0
