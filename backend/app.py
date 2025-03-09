@@ -7,7 +7,6 @@ import os
 from dotenv import load_dotenv
 from prompts import get_portfolio_prompt, SYSTEM_PROMPT
 import logging
-from services.linkedin_parser import LinkedInParser
 from templates.portfolio_template import generate_portfolio
 from services.resume_parser import ResumeParser
 import io
@@ -102,9 +101,6 @@ class PortfolioRequest(BaseModel):
     user: UserInfo
     projects: List[Project]
 
-class LinkedInRequest(BaseModel):
-    profile_url: str
-
 class GithubRequest(BaseModel):
     github_url: str
 
@@ -120,16 +116,6 @@ async def generate_portfolio_handler(request: dict):
         return {"html": html}
     except Exception as e:
         logger.error(f"Portfolio generation failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/parse-linkedin")
-async def parse_linkedin(request: LinkedInRequest):
-    try:
-        parser = LinkedInParser()
-        profile_data = parser.parse_profile(request.profile_url)
-        return profile_data
-    except Exception as e:
-        logger.error(f"LinkedIn parsing error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/parse-resume")

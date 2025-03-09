@@ -1,4 +1,4 @@
-import requests
+'''import requests
 import os
 import logging
 from linkedin_api import Linkedin
@@ -37,3 +37,4 @@ class LinkedInParser:
         except Exception as e:
             logger.error(f"Error parsing LinkedIn profile: {str(e)}")
             raise 
+'''
