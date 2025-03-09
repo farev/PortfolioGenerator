@@ -36,6 +36,7 @@ aiofiles==23.2.1
 # Utilities
 tqdm==4.67.1
 python-slugify==8.0.1
+python-dateutil==2.9.0.post0  # For date parsing in resume_parser
 
 # YouTube parsing
 youtube-transcript-api==0.6.3
