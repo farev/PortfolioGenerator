@@ -168,7 +168,7 @@ const Preview = ({ html, onHtmlChange }) => {
         iframeDoc.removeEventListener('blur', handleChange);
       };
     }
-  }, [html, onHtmlChange, defaultContent]);
+  }, [html, onHtmlChange]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -201,7 +201,10 @@ const Preview = ({ html, onHtmlChange }) => {
 
   return (
     <PreviewContainer>
-      <EditableIframe ref={iframeRef} title="Portfolio Preview" />
+      <EditableIframe 
+        ref={iframeRef} 
+        title="Portfolio Preview" 
+      />
       
       {selectedImage && (
         <ImageEditModal>

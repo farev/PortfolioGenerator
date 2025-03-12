@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import config from '../config';
 
 const FormContainer = styled.div`
   margin-top: 2rem;
@@ -105,57 +106,48 @@ const ProjectForm = ({ onProjectsUpdate }) => {
     }));
   };
 
-  const generateDescription = async (projectData) => {
-    try {
-      const response = await fetch('http://localhost:8000/generate-project-description', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: projectData.title,
-          image: projectData.image,
-          description: projectData.description,
-          projectLink: projectData.projectLink
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate description');
-      }
-
-      const data = await response.json();
-      return data.description;
-    } catch (error) {
-      console.error('Error generating description:', error);
-      return projectData.description;
-    }
-  };
-
   const handleAddProject = async (e) => {
     e.preventDefault();
-    if (!newProject.title || !newProject.image || !newProject.description) {
-      alert('Please provide a title, image, and description');
+    if (!newProject.title || !newProject.description) {
+      alert('Please provide at least a title and description');
       return;
     }
 
     setIsGenerating(true);
     try {
-      // Generate enhanced description
-      const enhancedDescription = await generateDescription(newProject);
-      
+      // Generate enhanced description using the correct endpoint
+      const response = await fetch(`${config.apiBaseUrl}/generate-project-description`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newProject.title,
+          image: newProject.image,
+          description: newProject.description,
+          projectLink: newProject.github || newProject.live || ''
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to enhance description');
+      }
+
+      const data = await response.json();
+      const enhancedDescription = data.description || newProject.description;
+
       // Create final project with enhanced description
       const finalProject = {
         title: newProject.title,
         description: enhancedDescription,
-        image: newProject.image,
+        image: newProject.image || '',
         github: newProject.github || '',
         demo: newProject.demo || '',
         live: newProject.live || '',
         technologies: newProject.technologies || ''
       };
 
-      // Update projects list using the callback pattern
+      // Update projects list
       onProjectsUpdate(currentProjects => [...(currentProjects || []), finalProject]);
 
       // Reset form
@@ -176,6 +168,7 @@ const ProjectForm = ({ onProjectsUpdate }) => {
       }
     } catch (error) {
       console.error('Error adding project:', error);
+      alert(`Failed to add project: ${error.message}`);
     } finally {
       setIsGenerating(false);
     }

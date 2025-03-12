@@ -118,28 +118,19 @@ function App() {
   const [deployedUrl, setDeployedUrl] = useState(null);
   const [portfolioHtml, setPortfolioHtml] = useState('');
   const [generatedPortfolio, setGeneratedPortfolio] = useState(null);
-  const [portfolioUrl, setPortfolioUrl] = useState(null);
+  const [portfolioUrl, setPortfolioUrl] = useState('');
 
-  const handleGenerate = async (formData) => {
-    setIsGenerating(true);
+  const handleGenerate = async (userData) => {
     try {
-      // If HTML content is provided, use it directly
-      if (formData.html_content) {
-        setGeneratedHtml(formData.html_content);
-        setUserInfo(formData);
-        setActiveTab('preview');
-        setPortfolioHtml(formData.html_content);
-        setGeneratedPortfolio(formData);
-        return;
-      }
-
-      // Otherwise, generate new portfolio
+      setIsGenerating(true);
+      
+      // Make API call to generate portfolio
       const response = await fetch(`${config.apiBaseUrl}/generate-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(userData),
       });
 
       if (!response.ok) {
@@ -147,13 +138,24 @@ function App() {
       }
 
       const data = await response.json();
-      setGeneratedHtml(data.html);
-      setUserInfo(formData);
+      
+      // Make sure we're capturing the HTML content from the response
+      setPortfolioHtml(data.html_content);
+      
+      // Store the portfolio data
+      setGeneratedPortfolio({
+        ...userData,
+        slug: data.slug
+      });
+      
+      // Set the portfolio URL
+      setPortfolioUrl(`/${data.slug}`);
+      
+      // Switch to preview tab automatically
       setActiveTab('preview');
-      setPortfolioHtml(data.html);
-      setGeneratedPortfolio(data);
+      
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error generating portfolio:', error);
       alert('Failed to generate portfolio');
     } finally {
       setIsGenerating(false);
@@ -162,21 +164,30 @@ function App() {
 
   const handleProjectsUpdate = async (updatedProjects) => {
     try {
-      // Get the current portfolio data
-      const portfolioData = {
-        ...generatedPortfolio, // Your existing portfolio data
-        projects: updatedProjects,
-      };
+      if (!generatedPortfolio || !generatedPortfolio.slug) {
+        throw new Error('No portfolio data available');
+      }
 
-      // Make API call to update the portfolio
-      const response = await fetch(`${config.apiBaseUrl}/deploy-portfolio`, {
+      // Get the new project (last item in updatedProjects array)
+      const newProject = updatedProjects[updatedProjects.length - 1];
+      
+      // Make API call to add-project endpoint with complete portfolio data
+      const response = await fetch(`${config.apiBaseUrl}/add-project/${generatedPortfolio.slug}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...portfolioData,
-          html_content: portfolioHtml, // Include the current HTML content
+          ...newProject,
+          name: generatedPortfolio.name,
+          email: generatedPortfolio.email,
+          github: generatedPortfolio.github,
+          linkedin: generatedPortfolio.linkedin,
+          about_me: generatedPortfolio.about_me,
+          skills: generatedPortfolio.skills,
+          interests: generatedPortfolio.interests,
+          profile_image: generatedPortfolio.profile_image,
+          html_content: portfolioHtml
         }),
       });
 
@@ -184,41 +195,47 @@ function App() {
         throw new Error('Failed to update portfolio');
       }
 
-      const data = await response.json();
-      
       // Update local state with new data
       setGeneratedPortfolio(prevPortfolio => ({
         ...prevPortfolio,
         projects: updatedProjects
       }));
-
-      // Optionally update the URL if needed
-      if (data.url) {
-        setPortfolioUrl(data.url);
+      
+      // Fetch the updated portfolio HTML
+      const portfolioResponse = await fetch(`${config.apiBaseUrl}/portfolio/${generatedPortfolio.slug}`);
+      if (!portfolioResponse.ok) {
+        throw new Error('Failed to fetch updated portfolio');
       }
+      
+      const html = await portfolioResponse.text();
+      setPortfolioHtml(html);
 
     } catch (error) {
       console.error('Error updating portfolio:', error);
-      throw new Error('Failed to update portfolio');
+      alert(`Failed to update portfolio: ${error.message}`);
     }
   };
 
   const handleDeploy = async () => {
     try {
-      if (!userInfo) {
+      // Check if we have either userInfo or generatedPortfolio
+      if (!userInfo && !generatedPortfolio) {
         alert('Please generate a portfolio first!');
         return;
       }
 
+      // Use generatedPortfolio if available, otherwise fall back to userInfo
+      const portfolioData = generatedPortfolio || userInfo;
+      
       const response = await fetch(`${config.apiBaseUrl}/deploy-portfolio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...userInfo,
+          ...portfolioData,
           base_url: window.location.origin,
-          html_content: generatedHtml
+          html_content: portfolioHtml || generatedHtml
         })
       });
 
@@ -239,7 +256,7 @@ function App() {
   };
 
   const handleHtmlChange = (newHtml) => {
-    setGeneratedHtml(newHtml);
+    setPortfolioHtml(newHtml);
   };
 
   return (
@@ -277,13 +294,13 @@ function App() {
             {activeTab === 'preview' ? (
               <>
                 <Preview 
-                  html={generatedHtml} 
+                  html={portfolioHtml} 
                   onHtmlChange={handleHtmlChange} 
                 />
                 <ButtonContainer>
                   <DeployButton 
                     onClick={handleDeploy}
-                    disabled={!generatedHtml}
+                    disabled={!portfolioHtml}
                   >
                     Deploy Portfolio
                   </DeployButton>
@@ -299,8 +316,8 @@ function App() {
               </>
             ) : (
               <CodeView 
-                code={generatedHtml} 
-                onChange={setGeneratedHtml}
+                code={portfolioHtml} 
+                onChange={handleHtmlChange}
               />
             )}
           </EditorContainer>

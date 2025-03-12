@@ -337,7 +337,7 @@ async def deploy_portfolio(request: dict, db: Session = Depends(get_db)):
         if existing_portfolio:
             # Update existing portfolio instead of creating a new one
             slug = existing_portfolio.slug
-            logger.info(f"Updating existing portfolio with slug: {slug}")
+            #logger.info(f"Updating existing portfolio with slug: {slug}")
             
             # Update the portfolio content
             existing_portfolio.html_content = html_content
@@ -374,7 +374,7 @@ async def deploy_portfolio(request: dict, db: Session = Depends(get_db)):
             
             # Save updated projects list
             existing_portfolio.projects = json.dumps(existing_projects)
-            logger.info(f"Updated portfolio with {len(existing_projects)} projects")
+            #logger.info(f"Updated portfolio with {len(existing_projects)} projects")
             
             # Update the user if needed
             if user:
@@ -445,7 +445,7 @@ async def get_portfolio(slug: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Portfolio not found")
         
         # Log portfolio details for debugging
-        logger.info(f"Retrieved portfolio {slug} with projects: {portfolio.projects}")
+        logger.info(f"Retrieved portfolio {slug}")
         
         # If we need to process the portfolio before returning it
         # For example, if the template needs projects as a list instead of a JSON string
@@ -552,6 +552,7 @@ async def add_project(slug: str, project: dict, db: Session = Depends(get_db)):
             "about_me": portfolio.about_me,
             "skills": user.skills,
             "interests": portfolio.interests,
+            "profile_image": project.get('profile_image'),  # Get profile image from project data
             "projects": existing_projects
         }
         
@@ -565,7 +566,6 @@ async def add_project(slug: str, project: dict, db: Session = Depends(get_db)):
         return {"success": True, "project_count": len(existing_projects)}
     except Exception as e:
         db.rollback()
-        logger.error(f"Error adding project: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
