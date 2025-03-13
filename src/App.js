@@ -124,6 +124,15 @@ function App() {
     try {
       setIsGenerating(true);
       
+      // If userData already has html_content, use it directly
+      if (userData.html_content) {
+        setPortfolioHtml(userData.html_content);
+        setGeneratedPortfolio(userData);
+        setActiveTab('preview');
+        setIsGenerating(false);
+        return;
+      }
+      
       // Make API call to generate portfolio
       const response = await fetch(`${config.apiBaseUrl}/generate-portfolio`, {
         method: 'POST',
@@ -132,11 +141,11 @@ function App() {
         },
         body: JSON.stringify(userData),
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to generate portfolio');
       }
-
+      
       const data = await response.json();
       
       // Make sure we're capturing the HTML content from the response

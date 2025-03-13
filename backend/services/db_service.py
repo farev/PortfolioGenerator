@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Optional, List
 from slugify import slugify
 import uuid
+from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
 
@@ -140,22 +141,43 @@ class DatabaseService:
             raise
     
     @staticmethod
-    def find_portfolio_by_urls(db: Session, github_url: Optional[str] = None, linkedin_url: Optional[str] = None) -> Optional[Portfolio]:
+    def find_portfolio_by_urls(db: Session, github_url: str = None, linkedin_url: str = None) -> Optional[Portfolio]:
         """
         Find a portfolio by GitHub or LinkedIn URL
         """
         try:
+            # First, find users with matching URLs
+            query = db.query(User)
+            conditions = []
             if github_url:
-                user = db.query(User).filter(User.github_url == github_url).first()
-                if user and user.portfolios:
-                    # Return the most recent portfolio
-                    return sorted(user.portfolios, key=lambda p: p.created_at, reverse=True)[0]
-            
+                conditions.append(User.github_url == github_url)
             if linkedin_url:
-                user = db.query(User).filter(User.linkedin_url == linkedin_url).first()
-                if user and user.portfolios:
-                    # Return the most recent portfolio
-                    return sorted(user.portfolios, key=lambda p: p.created_at, reverse=True)[0]
+                conditions.append(User.linkedin_url == linkedin_url)
+            
+            # Apply conditions with OR logic if both URLs are provided
+            if conditions:
+                if len(conditions) > 1:
+                    query = query.filter(or_(*conditions))
+                else:
+                    query = query.filter(conditions[0])
+            else:
+                return None
+            
+            users = query.all()
+            logger.info(f"Found {len(users)} users matching the URLs")
+            
+            if not users:
+                return None
+            
+            # For each user, get their most recent portfolio
+            for user in users:
+                logger.info(f"Checking portfolios for user: {user.name} (ID: {user.id})")
+                portfolio = db.query(Portfolio).filter(Portfolio.user_id == user.id).order_by(Portfolio.updated_at.desc()).first()
+                if portfolio:
+                    logger.info(f"Found portfolio with slug: {portfolio.slug}")
+                    return portfolio
+                else:
+                    logger.info(f"No portfolios found for user ID: {user.id}")
             
             return None
         except Exception as e:

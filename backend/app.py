@@ -121,7 +121,55 @@ async def generate_portfolio_endpoint(data: dict, db: Session = Depends(get_db))
             user_data['profile_image'] = user_data.pop('profileImage')
             
         logger.info("Generating portfolio...")
+        
+        # Check if a portfolio already exists for this user's LinkedIn or GitHub
+        existing_portfolio = None
+        if data.get('linkedin'):
+            existing_portfolio = DatabaseService.find_portfolio_by_urls(db, None, data.get('linkedin'))
+            if existing_portfolio:
+                logger.info(f"Found existing portfolio with slug: {existing_portfolio.slug}")
+        
+        if not existing_portfolio and data.get('github'):
+            existing_portfolio = DatabaseService.find_portfolio_by_urls(db, data.get('github'), None)
+            if existing_portfolio:
+                logger.info(f"Found existing portfolio with slug: {existing_portfolio.slug}")
+
         html = generate_portfolio(user_data)
+        
+        # If we found an existing portfolio, update it instead of creating a new one
+        if existing_portfolio:
+            # Update the portfolio content
+            existing_portfolio.html_content = html
+            existing_portfolio.about_me = data.get('about_me', '')
+            existing_portfolio.interests = data.get('interests', '')
+            
+            # Update projects if needed
+            if data.get('projects'):
+                existing_portfolio.projects = json.dumps(data.get('projects', []))
+            
+            # Update the user
+            user = existing_portfolio.user
+            if data.get('name'):
+                user.name = data.get('name')
+            if data.get('skills'):
+                user.skills = data.get('skills')
+            if data.get('email'):
+                user.email = data.get('email')
+            if data.get('github'):
+                user.github_url = data.get('github')
+            if data.get('linkedin'):
+                user.linkedin_url = data.get('linkedin')
+            
+            # Commit the changes
+            db.commit()
+            db.refresh(existing_portfolio)
+            logger.info(f"Updated existing portfolio with slug: {existing_portfolio.slug}")
+            
+            # Return the updated portfolio
+            return {
+                "slug": existing_portfolio.slug,
+                "html_content": html
+            }
         
         # Create a unique slug for the portfolio
         name = data.get('name', '')
@@ -307,6 +355,63 @@ async def deploy_portfolio(request: dict, db: Session = Depends(get_db)):
         html_content = request.get('html_content')
         user_info = {k: v for k, v in request.items() if k != 'html_content'}
         
+        # Check if there's an existing portfolio with the same LinkedIn or GitHub URL
+        existing_portfolio = None
+        
+        # First check by LinkedIn URL
+        if user_info.get('linkedin'):
+            linkedin_portfolio = DatabaseService.find_portfolio_by_urls(db, None, user_info.get('linkedin'))
+            if linkedin_portfolio:
+                existing_portfolio = linkedin_portfolio
+                logger.info(f"Found existing portfolio by LinkedIn URL with slug: {existing_portfolio.slug}")
+        
+        # Then check by GitHub URL if no portfolio was found by LinkedIn
+        if not existing_portfolio and user_info.get('github'):
+            github_portfolio = DatabaseService.find_portfolio_by_urls(db, user_info.get('github'), None)
+            if github_portfolio:
+                existing_portfolio = github_portfolio
+                logger.info(f"Found existing portfolio by GitHub URL with slug: {existing_portfolio.slug}")
+        
+        # If we found an existing portfolio, update it instead of creating a new one
+        if existing_portfolio:
+            slug = existing_portfolio.slug
+            logger.info(f"Updating existing portfolio with slug: {slug}")
+            
+            # Update the portfolio content
+            existing_portfolio.html_content = html_content
+            existing_portfolio.about_me = user_info.get('about_me', '')
+            existing_portfolio.interests = user_info.get('interests', '')
+            
+            # Update projects if needed
+            if user_info.get('projects'):
+                existing_portfolio.projects = json.dumps(user_info.get('projects'))
+            
+            # Update the user
+            user = existing_portfolio.user
+            if user_info.get('name'):
+                user.name = user_info.get('name')
+            if user_info.get('skills'):
+                user.skills = user_info.get('skills')
+            if user_info.get('email'):
+                user.email = user_info.get('email')
+            if user_info.get('github'):
+                user.github_url = user_info.get('github')
+            if user_info.get('linkedin'):
+                user.linkedin_url = user_info.get('linkedin')
+            
+            # Commit the changes
+            db.commit()
+            db.refresh(existing_portfolio)
+            logger.info(f"Successfully updated portfolio {slug} in database")
+            
+            # Generate the portfolio URL
+            portfolio_url = f"/{slug}"
+            
+            return {
+                "url": portfolio_url,
+                "slug": slug
+            }
+        
         # First, try to find the user by LinkedIn, GitHub, or email
         user = None
         if user_info.get('linkedin'):
@@ -324,115 +429,39 @@ async def deploy_portfolio(request: dict, db: Session = Depends(get_db)):
             if user_by_email:
                 user = user_by_email
         
-        # If we found a user, check if they have any portfolios
-        existing_portfolio = None
-        if user:
-            # Get the most recent portfolio for this user
-            existing_portfolio = db.query(Portfolio).filter(Portfolio.user_id == user.id).order_by(Portfolio.updated_at.desc()).first()
+        # Create new portfolio
+        base_slug = slugify(user_info.get('name', 'portfolio'))  # Provide default name
+        slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
+        logger.info(f"Creating new portfolio with slug: {slug}")
         
-        # If no user or no portfolio found, check by URLs as a fallback
-        if not existing_portfolio:
-            existing_portfolio = DatabaseService.find_portfolio_by_urls(db, user_info.get('github'), user_info.get('linkedin'))
+        # Save the portfolio with all user info
+        portfolio_data = {
+            "html_content": html_content,
+            "about_me": user_info.get('about_me', ''),
+            "interests": user_info.get('interests', ''),
+            "projects": user_info.get('projects', []),
+            "slug": slug
+        }
         
-        if existing_portfolio:
-            # Update existing portfolio instead of creating a new one
-            slug = existing_portfolio.slug
-            #logger.info(f"Updating existing portfolio with slug: {slug}")
-            
-            # Update the portfolio content
-            existing_portfolio.html_content = html_content
-            existing_portfolio.about_me = user_info.get('about_me', '')
-            existing_portfolio.interests = user_info.get('interests', '')
-            
-            # Check if there are existing projects
-            existing_projects = []
-            if existing_portfolio.projects:
-                try:
-                    existing_projects = json.loads(existing_portfolio.projects)
-                except:
-                    logger.warning(f"Could not parse existing projects for portfolio {existing_portfolio.slug}")
-            
-            # Add new projects or update existing ones
-            new_projects = user_info.get('projects', [])
-            
-            # If new_projects is a single project (not a list), convert it to a list
-            if isinstance(new_projects, dict):
-                new_projects = [new_projects]
-            
-            # Merge projects - add new ones and update existing ones by title
-            for new_project in new_projects:
-                # Check if this project already exists (by title)
-                existing_index = next((i for i, p in enumerate(existing_projects) 
-                                      if p.get('title') == new_project.get('title')), None)
-                
-                if existing_index is not None:
-                    # Update existing project
-                    existing_projects[existing_index].update(new_project)
-                else:
-                    # Add new project
-                    existing_projects.append(new_project)
-            
-            # Save updated projects list
-            existing_portfolio.projects = json.dumps(existing_projects)
-            #logger.info(f"Updated portfolio with {len(existing_projects)} projects")
-            
-            # Update the user if needed
-            if user:
-                if user_info.get('name'):
-                    user.name = user_info.get('name')
-                if user_info.get('skills'):
-                    user.skills = user_info.get('skills')
-                if user_info.get('email'):
-                    user.email = user_info.get('email')
-                if user_info.get('github') and not user.github_url:
-                    user.github_url = user_info.get('github')
-                if user_info.get('linkedin') and not user.linkedin_url:
-                    user.linkedin_url = user_info.get('linkedin')
-            
-            # Commit the changes
-            db.commit()
-            
-            # Generate the portfolio URL
-            portfolio_url = f"/{slug}"
-            
-            return {
-                "url": portfolio_url,
-                "slug": slug
-            }
-        else:
-            # Create new portfolio
-            base_slug = slugify(user_info.get('name', 'portfolio'))  # Provide default name
-            slug = f"{base_slug}-{str(uuid.uuid4())[:8]}"
-            logger.info(f"Creating new portfolio with slug: {slug}")
+        # Save user and portfolio to database
+        user = DatabaseService.get_or_create_user(db, {
+            "name": user_info.get('name', ''),
+            "email": user_info.get('email', ''),
+            "linkedin": user_info.get('linkedin', ''),
+            "github": user_info.get('github', ''),
+            "skills": user_info.get('skills', '')
+        })
         
-            # Save the portfolio with all user info
-            portfolio_data = {
-                "html_content": html_content,
-                "about_me": user_info.get('about_me', ''),
-                "interests": user_info.get('interests', ''),
-                "projects": user_info.get('projects', []),
-                "slug": slug
-            }
-            
-            # Save user and portfolio to database
-            user = DatabaseService.get_or_create_user(db, {
-                "name": user_info.get('name', ''),
-                "email": user_info.get('email', ''),
-                "linkedin": user_info.get('linkedin', ''),
-                "github": user_info.get('github', ''),
-                "skills": user_info.get('skills', '')
-            })
-            
-            portfolio = DatabaseService.save_portfolio(db, user.id, portfolio_data)
-            slug = portfolio.slug
-            
-            # Generate the portfolio URL
-            portfolio_url = f"/{slug}"
-            
-            return {
-                "url": portfolio_url,
-                "slug": slug
-            }
+        portfolio = DatabaseService.save_portfolio(db, user.id, portfolio_data)
+        slug = portfolio.slug
+        
+        # Generate the portfolio URL
+        portfolio_url = f"/{slug}"
+        
+        return {
+            "url": portfolio_url,
+            "slug": slug
+        }
     except Exception as e:
         logger.error(f"Portfolio deployment failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -458,7 +487,12 @@ async def get_portfolio(slug: str, db: Session = Depends(get_db)):
             except Exception as e:
                 logger.error(f"Error parsing projects JSON: {str(e)}")
         
-        return HTMLResponse(content=portfolio.html_content, status_code=200)
+        # Create response with no-cache headers
+        response = HTMLResponse(content=portfolio.html_content, status_code=200)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
     except HTTPException:
         raise
     except Exception as e:
@@ -563,9 +597,14 @@ async def add_project(slug: str, project: dict, db: Session = Depends(get_db)):
         portfolio.html_content = html_content
         db.commit()
         
+        # Force a refresh of the portfolio from the database
+        db.refresh(portfolio)
+        logger.info(f"Successfully added project to portfolio {slug} and updated HTML")
+        
         return {"success": True, "project_count": len(existing_projects)}
     except Exception as e:
         db.rollback()
+        logger.error(f"Error adding project: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

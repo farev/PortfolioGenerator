@@ -195,8 +195,41 @@ const UserForm = ({ onGenerate, onProjectsUpdate, isGenerating, setIsGenerating,
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsGenerating(true);
-
+    
     try {
+      // Check if portfolio exists
+      const checkResponse = await fetch(`${config.apiBaseUrl}/check-portfolio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          linkedin: formData.linkedin,
+          github: formData.github
+        }),
+      });
+      
+      const checkData = await checkResponse.json();
+      
+      if (checkData.exists) {
+        // If portfolio exists, use its data
+        setFormData({
+          ...formData,
+          ...checkData.portfolio
+        });
+        
+        // Set the HTML content for preview
+        onGenerate({
+          ...formData,
+          ...checkData.portfolio,
+          html_content: checkData.html
+        });
+        
+        setIsPortfolioGenerated(true);
+        setIsGenerating(false);
+        return;
+      }
+      
       // First, fetch GitHub projects if URL is provided
       let githubProjects = [];
       if (formData.github) {
