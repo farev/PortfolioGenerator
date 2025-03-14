@@ -67,3 +67,7 @@ backend/portfolios/
 backend/portfolios/*
 *.html
 *.json
+
+# SQLite database
+folio.db
+*.db
