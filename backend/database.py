@@ -11,8 +11,8 @@ load_dotenv()
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Get database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./folioai.db")
+# Always use PostgreSQL
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
